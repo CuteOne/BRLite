@@ -62,6 +62,39 @@ then when you pull newer versions of the source code you'll not need to worry ab
 6. Start NN (or your unlocker)  I really hoped you renamed it but TBH Big Brother can see through that crap now.
 7. Look in chat dialog for anthing amiss.
    
+# Using The Bot
+Once loaded you should see a couple of things.  You should see the standard "fire" BR minimap icon, you should see the rotation toolbar itself (if you have a valid rotation for your class, spec, and Client version) and you should see some items in the chat frame.
+
+## Chat frame 
+The current bot kinda spams the chat log during usage with every spell being cast.  This will definitely change in the future but I consider this an early beta product and the chat log is the only way to do debugging.  The important part is during startup:
+
+***TODO: Add Images***
+
+## The Minimap Icon
+
+The minimap icon is the standard BR fire/flame icon. It has tooltips that tell you what it does.
+
+Left-click will bring up the main BR Lite Settings window (A WIP)
+Right-click will toggle the BR Toolbar on and off
+Shift-Left-Click will pull up the "MOVER" screen which will allow you to reposition the BRLite UI Elements around your interface.
+
+*** TODO: Elaborate ***
+
+## Toolbar
+
+*Note: The toolbar will not appear unless you have an active rotation that matches your class, specialization, and is designed to run on the version of the client you are using.*
+
+Toolbar icons are wrapped in either a green or red border. Yeah; red = off, green = on.  
+
+From left to right:
+
+- The rotation toggle button. This turns the rotation on and off.  Is represented by your class icon
+- The fishing icon.  You've got this, I bet I don't even need to explain it.
+- The Movement Icon.  This will prevent the bot from performing any movement activities.  The only movement the bot currently supports is Line-Of-Sight Click to Move to current target.  And that's if it's actually called in the rotation.  That method is ```br.ActivePlayer:CloseToMelee(target)```
+
+
+
+
 
 # The Rotation, Broken Down
 
