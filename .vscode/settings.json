@@ -1,0 +1,43 @@
+{
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.runtime.builtin": {
+        "basic": "disable",
+        "debug": "disable",
+        "io": "disable",
+        "math": "disable",
+        "os": "disable",
+        "package": "disable",
+        "string": "disable",
+        "table": "disable",
+        "utf8": "disable"
+    },
+    "Lua.workspace.library": [
+        "~\\.vscode\\extensions\\amstaffix.nilname-lua-api-1.3.0\\lua-definitions",
+        "${env:AF_HOME}",
+        "~\\.vscode\\extensions\\ketho.wow-api-0.22.1\\Annotations\\Core"
+    ],
+    "Lua.diagnostics.globals": [
+        "WorldFrame",
+        "InspectFrame",
+        "UNKNOWN",
+        "ExportUtil",
+        "LE_PARTY_CATEGORY_HOME",
+        "TalentUtil",
+        "TalentButtonUtil",
+        "LE_PARTY_CATEGORY_INSTANCE",
+        "Settings",
+        "class",
+        "Object",
+        "WIN",
+        "Add",
+        "PlayerUtil",
+        "PanelResizeButtonMixin",
+        "SOUNDKIT",
+        "UIParent",
+        "GameTooltip",
+        "LootFrame"
+    ],
+    "Lua.diagnostics.disable": [
+        "assign-type-mismatch"
+    ]
+}
