@@ -27,17 +27,17 @@ BRLite is simply a light-weight redeveloped version of the traditional BadRotati
 
 ## Core Development principals
 
-    Only the minimal of items will be tracked.  If we can determine something dynamically using standard API we try to do so.  We try to avoid creating large tables that require regular iteration and use CPU cycles.  let the standard API call into the game's engine do that as it's much faster.  An example of this is how we track buffs. Yes there's a table made in the Player object but it's just a table of what buffs we are looking for and associated helper functions.  When we go to check if a buff is up we don't rely on cached info and just call the API.  Hopefully this will reduce memory and CPU load requirements over the previous version that cached everything.
+Only the minimal of items will be tracked.  If we can determine something dynamically using standard API we try to do so.  We try to avoid creating large tables that require regular iteration and use CPU cycles.  let the standard API call into the game's engine do that as it's much faster.  An example of this is how we track buffs. Yes there's a table made in the Player object but it's just a table of what buffs we are looking for and associated helper functions.  When we go to check if a buff is up we don't rely on cached info and just call the API.  Hopefully this will reduce memory and CPU load requirements over the previous version that cached everything.
   
-    Only Combat Rotation and Related features will be supported.  The only exception here is a fishing module I threw in because, well, you know, fishing.
+Only Combat Rotation and Related features will be supported.  The only exception here is a fishing module I threw in because, well, you know, fishing.
 
-    No Heal-bot stuff.  Once this code base stabilizes I'll probably work on a Healing specific version but the level of crap you have to track for a good heal bot is out-of-control.
+No Heal-bot stuff.  Once this code base stabilizes I'll probably work on a Healing specific version but the level of crap you have to track for a good heal bot is out-of-control.
 
-    Code must support ALL versions of WOW from 11.1.0 onward. To do this you'll notice that Spells, Auras, and Talents are defined inside of the rotation (Or not, as Cata/Mop don't have the same Talent stuff).  Where there are API changes that the bot itself uses we'll proxy that out by version.  Each rotation will have a Minimum and Maximum TOC version that it supports.  So yes, you can run this on your private 11.1.5 server with one rotation, and use the same code base to load it up under Retail MOP. It would just be a different rotation.
+Code must support ALL versions of WOW from 11.1.0 onward. To do this you'll notice that Spells, Auras, and Talents are defined inside of the rotation (Or not, as Cata/Mop don't have the same Talent stuff).  Where there are API changes that the bot itself uses we'll proxy that out by version.  Each rotation will have a Minimum and Maximum TOC version that it supports.  So yes, you can run this on your private 11.1.5 server with one rotation, and use the same code base to load it up under Retail MOP. It would just be a different rotation.
 
-    Intellisense.  All core objects have Intellisense notations where possible.  This helps all you vibe coders create rotations.
+Intellisense.  All core objects have Intellisense notations where possible.  This helps all you vibe coders create rotations.
 
-    One core object to rule them all.  the BR object is the root object.  All other components, like say logging, are referenced there.  The code base is so small compared to BR that doing  ```local log = br.Logging``` seemed so much easier than using a module loader, and we don't really have dynamically loaded modules here.
+One core object to rule them all.  the BR object is the root object.  All other components, like say logging, are referenced there.  The code base is so small compared to BR that doing  ```local log = br.Logging``` seemed so much easier than using a module loader, and we don't really have dynamically loaded modules here.
    
 
 # Installing
