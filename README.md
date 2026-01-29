@@ -1,5 +1,4 @@
 # Bad Rotations Light, or BRLite for short.
-***
 
 ## First and foremost, Licensing.  
 
@@ -17,10 +16,12 @@ This software currently requires NilName as it's the only software of that natur
 
 The current full build of BadRotations requires a fairly old DieselLib for UI development.  This library is not maintained and as such has been manually patched progressively throughout the years.  It's not very nice to play with when it comes to the various versions out there.  As such I have decided to utilize a different UI library named AbstractFramework.  It is available for all versions of retail from 11.1.0 onward, and all flavors of retail such as classic, mop, etc.  You must install this library yourself -- it's not included here.  BRLite will ensure it's loaded and notify you if it can't find the library.  
 
+***NOTE: Make sure you install the Abstract Framework for your specific Client Version: ***
+[Abstract Framework UI Library](https://www.curseforge.com/wow/addons/abstract-framework/files/all)
+
 All of the other libraries are included in this package, and adhere to the license of the original creators. This includes LibDataBroker-1.1, LibDBIncon-1.0, and LibStub.
 
 # What is BRLite?
-***
 
 BRLite is simply a light-weight redeveloped version of the traditional BadRotations without a lot of the overhead.  It is designed to do one thing only, provide you with combat rotations.  Well it does a touch more than that but we'll get to that in a minute.
 
