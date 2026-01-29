@@ -33,7 +33,7 @@ BRLite is simply a light-weight redeveloped version of the traditional BadRotati
 
 3. No Heal-bot stuff.  Once this code base stabilizes I'll probably work on a Healing specific version but the level of crap you have to track for a good heal bot is out-of-control.
 
-4. Code must support ALL versions of WOW from 11.1.0 onward. To do this you'll notice that Spells, Auras, and Talents are defined inside of the rotation (Or not, as Cata/Mop don't have the same Talent stuff).  Where there are API changes that the bot itself uses we'll proxy that out by version.  Each rotation will have a Minimum and Maximum TOC version that it supports.  So yes, you can run this on your private 11.1.5 server with one rotation, and use the same code base to load it up under Retail MOP. It would just be a different rotation.
+4. Code must support ALL versions of WOW from 11.1.0 onward, classic, classic era, or whatever other retail flavors they release. To do this you'll notice that Spells, Auras, and Talents are defined inside of the rotation (Or not, as Cata/Mop don't have the same Talent stuff).  Where there are API changes that the bot itself uses we'll proxy that out by version.  Each rotation will have a Minimum and Maximum TOC version that it supports.  So yes, you can run this on your private 11.1.5 server with one rotation, and use the same code base to load it up under Retail MOP. It would just be a different rotation.
 
 5. Intellisense.  All core objects have Intellisense notations where possible.  This helps all you vibe coders create rotations.
 
@@ -123,5 +123,38 @@ local RotationSpecializationID = 1
 
 Each rotation needs to have these elements defined.  It's what allows the bot to determine if the rotation is proper for your class, specialization, and client version.  
 
+
+```
+-----------------------------------------------------
+--- Spell List.  Yes I know the previous BR had all of
+--- these inside the core code but they vary so much
+--- by client release that to support multiple versions
+--- we need to have them defined per rotation.
+--- ------------------------------------------------
+local SpellList = {
+    TigerPalm = 100780,
+    BlackoutKick = 205523,
+    RisingSunKick = 107428,
+    ...
+}
+```
+
+Each rotation must define the spell list.  These are then used to construct the Player:Cast table.  we do this so you can use familiar methods in your rotation like cast.able.TigerPalm() or cast.RisingSunKick() etc.
+
+```
+--------------------------------------------------------
+--- Aura List
+--- List of Buffs to track in the player.buffs table or the Br.Debuffs table
+--- --------------------------------------------------------
+local AuraList = {
+    CombatWisdom = 129914,
+    TeachingsOfTheMonastery = 202090,
+    Provoke = 116189,
+    Bok_proc = 116768,
+    Chi_Wave = 450380,
+    ...
+}
+```
+Same with the Aura List.  These are then used to construct two helper tables,  Player.Buffs and br.Debuffs
 
 
