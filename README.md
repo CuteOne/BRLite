@@ -89,10 +89,10 @@ Toolbar icons are wrapped in either a green or red border. Yeah; red = off, gree
 From left to right:
 
 - The rotation toggle button. This turns the rotation on and off.  Is represented by your class icon
-- The fishing icon.  You've got this, I bet I don't even need to explain it.
+- The fishing icon.  You've got this, I bet I don't even need to explain it. FWIW the fishing bot will auto-accept BOP items such as threads.
 - The Movement Icon.  This will prevent the bot from performing any movement activities.  The only movement the bot currently supports is Line-Of-Sight Click to Move to current target.  And that's if it's actually called in the rotation.  That method is ```br.ActivePlayer:CloseToMelee(target)```
-
-
+- The Facing Icon.  This toggles whether or not to have the bot maintain your player's rotation so it's always facing your active target.
+- The Looting Icon.  Yup, bet you know what this button does too.  
 
 
 
@@ -100,7 +100,28 @@ From left to right:
 
 I'm going to go through a rotation file so you know what parts are what. Hopefully YOU can contribute by building rotations.  Rotations are the life-blood of a bot and they really do take a while to build. Mostly because testing requires you to level through a character and that process isn't just a few hours, sometimes it's DAYS of working on getting a character's rotation where you want it. And that's nothing compared to tweaking a rotation up enough to handle Heroic, then M+ crap.  Ugh.
 
-So 
+## Initial Rotation info
+
+The first part of the file has the initial parameters of the rotation.
+
+```
+---@type _,br,_   #Must include typing to get intellisense in VSCode
+local _,br,_ = ...  
+
+---------------------------------------------------------------------------
+-- Rotation Information, Required to determine if the rotation can be used
+---------------------------------------------------------------------------
+local RotationName = "Stock Monk BM 11.1.5"
+local RotationShortName = "StockBM110105"
+local RotationVersion = 1.0
+local RotationDescription = "Standard BM rotation for 11.1.5 TWW "
+local RotationTOCLower = 110105
+local RotationTOCUpper = 110105
+local RotationClassName = "MONK"
+local RotationSpecializationID = 1  
+```
+
+Each rotation needs to have these elements defined.  It's what allows the bot to determine if the rotation is proper for your class, specialization, and client version.  
 
 
 

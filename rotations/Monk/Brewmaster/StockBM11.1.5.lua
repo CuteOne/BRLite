@@ -1,5 +1,5 @@
 ---@type _,br,_   #Must include typing to get intellisense in VSCode
-local _,br,_ = ...  --FYI in most cases 3rd param is the actual unloader. But we don't call it directly. instead we use proxy methods so the code is more portable between unlockers.
+local _,br,_ = ...  
 
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
