@@ -17,6 +17,13 @@ function br.Framework:RotationPulse()
 end
 
 function br.Framework:Startup()
+
+    ---@type AbstractFramework
+    local AF = _G.AbstractFramework
+    if not AF then
+        Log:LogError("ERROR: AbstractFramework not found. BRLite cannot start.")
+        return
+    end
     
     Settings:Initialize("/scripts/settings","brlite_settings.json")  
     br.UI.Elements.MinimapIcon:Initialize()
