@@ -121,7 +121,7 @@ local RotationClassName = "MONK"
 local RotationSpecializationID = 1  
 ```
 
-Each rotation needs to have these elements defined.  It's what allows the bot to determine if the rotation is proper for your class, specialization, and client version.  
+Each rotation needs to have these elements defined.  It's what allows the bot to determine if the rotation is proper for your class, specialization, and client version.  Pay special note to the RotationTOCLower and RotationTOCUpper variables.  These define which client versions are valid for this rotation.  If I felt this rotation worked just as well in 11.1.5 and 11.1.7 then I would change the RotationTOCUpper to 110107.  These #s are the same numbers used by Addons.  If you're confused about what these numbers mean there's this whole thing called the internet, and search and ai tools to help you find what you're looking for.  Don't make me google it for you.
 
 
 ## Spells, Auras, and Talents
