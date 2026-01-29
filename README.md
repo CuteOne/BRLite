@@ -124,6 +124,7 @@ local RotationSpecializationID = 1
 Each rotation needs to have these elements defined.  It's what allows the bot to determine if the rotation is proper for your class, specialization, and client version.  
 
 
+## Spells, Auras, and Talents
 ```
 -----------------------------------------------------
 --- Spell List.  Yes I know the previous BR had all of
@@ -157,4 +158,51 @@ local AuraList = {
 ```
 Same with the Aura List.  These are then used to construct two helper tables,  Player.Buffs and br.Debuffs
 
+```
+--------------------------------------------------------
+--- Talent List.  if you use Player:HasTalent() you can
+--- use this list to define the talent ID rather than
+--- typing in talentID
+--- ------------------------------------------------------
+local TalentList = {
+    FluidityOfMotion = 387230,
+    ScaldingBrew = 383698,
+}
+```
+Again, a local list that tracks talents.  Used in Player:HasTalen(TalentList.FluidtyOfMotion).  This one is kinda optional as you could always just pass the ID # of the talent into that method.  Up to you.
 
+
+## Mapping to locals and using --@Type
+
+```
+---------------------------------------------------------
+--- Map your functions locally here for ease of use
+--- -----------------------------------------------------
+---@type br.Logging
+local log    = br.Logging
+
+---@type Player
+local player = br.ActivePlayer
+
+---@type Player.cast
+local cast   = br.ActivePlayer.cast
+
+---@type Player.buffs
+local buffs  = br.ActivePlayer.buffs
+
+---@type Unit?
+local target = br.ActivePlayer:TargetUnit()
+
+---@type number
+local energy = br.ActivePlayer:Power()
+
+---@type number
+local stagger = UnitStagger("player") or 0
+```
+
+In the above code we map out a bunch of locals with Lua Language annotations that help with your intellisense.  By using these notations you'll see all (well most) of the fields of each object.
+
+## The Pulse, Meat of the Rotation
+
+```
+```
