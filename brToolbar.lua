@@ -7,6 +7,9 @@ local AF = _G.AbstractFramework
 ---@type br.Settings
 local Settings = br.Settings
 
+---@type br.Logging
+local Log = br.Logging
+
 ---@class br
 br = br or {}
 
@@ -60,19 +63,26 @@ function br:InitializeToolbar()
     local brEnableButton = AF.CreateButton(toolbarFrame,nil,"red",40,40)
     brEnableButton:SetPoint("TOPLEFT",0,0)
     brEnableButton:SetTexture("classicon-" .. strlower(PlayerUtil.GetClassFile()),{34,34},{"CENTER",0,0},true) --inv_10_gearupgrade_flightstone_black
-    brEnableButton:SetBorderHighlightColor("green")
-    brEnableButton:SetBorderColor("green")
+    if br.pulse then
+            brEnableButton:SetBorderHighlightColor("green")
+            brEnableButton:SetBorderColor("green")
+    else
+            brEnableButton:SetBorderHighlightColor("red")
+            brEnableButton:SetBorderColor("red")
+    end
     AF.SetTooltips(brEnableButton,"TOPLEFT",-10,0,"Toggle BR Lite Pulse.  Pulse is the main loop that runs the rotation.")
     brEnableButton:SetScript("OnClick",function()
         br.pulse = not br.pulse
         if br.pulse then
             brEnableButton:SetBorderHighlightColor("green")
             brEnableButton:SetBorderColor("green")
-            print("BR Lite Pulse Enabled")
+            Log:Log("BR Lite Pulse Enabled")
+            Settings:SetSetting("BR_ENABLED",true)
         else
             brEnableButton:SetBorderHighlightColor("red")
             brEnableButton:SetBorderColor("red")
-            print("BR Lite Pulse Disabled")
+            Log:Log("BR Lite Pulse Disabled")
+            Settings:SetSetting("BR_ENABLED",false)
         end
     end)
 
@@ -127,9 +137,13 @@ function br:InitializeToolbar()
         if br.DoMovement then
             brMovement:SetBorderHighlightColor("green")
             brMovement:SetBorderColor("green")
+            Log:Log("BR Movement Enabled")
+            Settings:SetSetting("BR_MOVEMENT_ENABLED",true)
         else
             brMovement:SetBorderHighlightColor("red")
             brMovement:SetBorderColor("red")
+            Log:Log("BR Movement Disabled")
+            Settings:SetSetting("BR_MOVEMENT_ENABLED",false)
         end
     end)
 
@@ -155,9 +169,13 @@ function br:InitializeToolbar()
         if br.DoFacing then
             brFacing:SetBorderHighlightColor("green")
             brFacing:SetBorderColor("green")
+            Log:Log("BR Facing Enabled")
+            Settings:SetSetting("BR_FACING_ENABLED",true)
         else
             brFacing:SetBorderHighlightColor("red")
             brFacing:SetBorderColor("red")
+            Log:Log("BR Facing Disabled")
+            Settings:SetSetting("BR_FACING_ENABLED",false)
         end
     end)
 
@@ -170,17 +188,26 @@ function br:InitializeToolbar()
     LootTex:SetTexture(133784)
     LootTex:SetSize(30,30)
     LootTex:SetPoint("CENTER",0,0)
-    brLooting:SetBorderHighlightColor("green")
-    brLooting:SetBorderColor("green")   
+    if br.DoLooting then
+            brLooting:SetBorderHighlightColor("green")
+            brLooting:SetBorderColor("green")
+        else
+            brLooting:SetBorderHighlightColor("red")
+            brLooting:SetBorderColor("red")
+        end
     LootTex:SetAllPoints(brLootingInnerFrame)
     brLooting:SetScript("OnClick",function()
         br.DoLooting = not br.DoLooting
         if br.DoLooting then
             brLooting:SetBorderHighlightColor("green")
             brLooting:SetBorderColor("green")
+            Log:Log("BR Looting Enabled")
+            Settings:SetSetting("BR_LOOTING_ENABLED",true)
         else
             brLooting:SetBorderHighlightColor("red")
             brLooting:SetBorderColor("red")
+            Log:Log("BR Looting Disabled")
+            Settings:SetSetting("BR_LOOTING_ENABLED",false)
         end
     end)
     br.TOOLBAR = toolbarFrame

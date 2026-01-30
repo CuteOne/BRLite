@@ -54,6 +54,14 @@ end
 function Settings:LoadDefaultProfileSettings()
 end
 
+function Settings:GetSettingToggle(key, default)
+    local setting = self:GetSetting(key)
+    if setting == nil then
+        return default
+    end
+    return setting
+end
+
 ---Return system setting with a given value
 ---@param key string @key to retrieve
 ---@return any @results may be string, number, table or nil
@@ -61,14 +69,13 @@ function Settings:GetSetting(key)
     if not self.Loaded then
         Log:LogError("Settings not loaded yet; cannot get setting for key: " .. tostring(key))
     end
-    return self.settings[key] or nil
+    return self.settings[key] 
 end
 
 ---Set a system setting with a given value
 ---@param key string @key to set
 ---@param value any @value to set
 function Settings:SetSetting(key, value)
-    print("Settings:SetSetting called for key: " .. tostring(key) .. " value: " .. tostring(value))
     self.settings[key] = value
     Settings:SaveSettings()
 end

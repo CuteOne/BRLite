@@ -26,6 +26,13 @@ function br.Framework:Startup()
     end
     
     Settings:Initialize("/scripts/settings","brlite_settings.json")  
+
+    br.pulse = Settings:GetSettingToggle("BR_ENABLED",true)
+    br.DoMovement = Settings:GetSettingToggle("BR_MOVEMENT_ENABLED",true)
+    br.DoFacing = Settings:GetSettingToggle("BR_FACING_ENABLED",true)
+    br.DoLooting = Settings:GetSettingToggle("BR_LOOTING_ENABLED",true)
+    
+
     br.UI.Elements.MinimapIcon:Initialize()
     br:InitializeToolbar()
   
@@ -100,19 +107,16 @@ function br.Framework:Startup()
             Log:Log("No saved active rotation; defaulting to first available rotation.")
             _,br.ActiveRotation = next(br.Rotations)
             Log:Log("1. Setting Active Rotation to: " .. tostring(br.ActiveRotation.ShortName))
-            br.pulse = true
         end
     else
         local rot = br.Rotations[rotationSettings.shortName]
         if rot then
             br.ActiveRotation = rot
             Log:Log("2. Setting Active Rotation to: " .. tostring(br.ActiveRotation.ShortName))
-            br.pulse = true
         else
             Log:Log("Saved active rotation " .. rotationSettings.shortName .. " not found; defaulting to first available rotation.")
             _,br.ActiveRotation = next(br.Rotations)
             Log:Log("2. Setting Active Rotation to: " .. tostring(br.ActiveRotation.ShortName))
-            br.pulse = true
         end
     end
 
@@ -122,7 +126,6 @@ function br.Framework:Startup()
         br.Framework:RotationPulse() 
     else
         Log:LogError("No  Active Rotation to initialize.")
-        br.pulse = false
         return
     end
 
