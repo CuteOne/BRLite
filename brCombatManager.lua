@@ -111,15 +111,19 @@ function cm:Initialize()
             end
         end
         if event == "PLAYER_REGEN_DISABLED" then
+            Log:Log("Player entered combat.")
             br.ActivePlayer.InCombat = true
             br.ActivePlayer.CombatStartTime = GetTime()
             br.ActivePlayer.NeedsOpener = true
         elseif event == "PLAYER_REGEN_ENABLED" then
+            Log:Log("Player exited combat.")
             br.ActivePlayer.InCombat = false
             br.ActivePlayer.NeedsOpener = false
-            C_Timer.After(1, function()
+            C_Timer.After(1.2, function()
                 if br.DoLooting and br.ObjectManager:LootableCount() > 0 then
                     br.Looting:Loot()
+                else
+                    Log:Log("No lootable corpses found after 1.2 seconds.")
                 end
             end)
         end

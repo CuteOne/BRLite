@@ -21,22 +21,11 @@ function Looting:Loot()
     --TODO Set timer to blacklist unreachable lootables
     Log:Log("Moving to lootable: " .. target.name .. " at distance " .. tostring(target:Distance()))
     if target:Distance() > 8 then
-        while target:Distance() > 8 do
             br.ClickToMove(br.ObjectLocation(target.guid))
             br.SendMovementHeartbeat()
-        end
     end
     Log:Log("Interacting with lootable: " .. target.name)
     br.ObjectInteract(target.guid)
-
-    -- if LootFrame:IsVisible() then
-    --     for slot=1,GetNumLootItems() do
-    --         local lootIcon, lootName, lootQuantity, currencyID, lootQuality, locked, isQuestItem, questId, isActive = GetLootSlotInfo(slot)
-    --         Log:Log(" Looting Slot " .. tostring(slot) .. ": " .. lootName)
-    --         LootSlot(slot)
-    --     end
-    --     CloseLoot()
-    -- end
 end
 br.Looting = Looting
 Log:Log("BR Looting module loaded")

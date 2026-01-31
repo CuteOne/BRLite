@@ -25,6 +25,16 @@ function br:ShowMover()
     AF.ShowMovers("BR")
 end
 
+function br:ToggleToolbarColor(button,enabled)
+    if enabled then
+        button:SetBorderHighlightColor("green")
+        button:SetBorderColor("green")
+    else
+        button:SetBorderHighlightColor("red")
+        button:SetBorderColor("red")
+    end
+end
+
 function br:InitializeToolbar()
 
     local savedSettings = br.Settings:GetSetting("TOOLBAR_SETTINGS")
@@ -40,14 +50,7 @@ function br:InitializeToolbar()
     end
 
     ---@type AF_BorderedFrame
-    local toolbarFrame = AF.CreateBorderedFrame(
-        AF.UIParent,
-        "TOOLBAR_FRAME",
-        savedSettings.width,
-        savedSettings.height,
-        "white",
-        "black"
-    )
+    local toolbarFrame = AF.CreateBorderedFrame(AF.UIParent,"TOOLBAR_FRAME",savedSettings.width,savedSettings.height,"white","black")
     AF.SetPoint(toolbarFrame,savedSettings.point,savedSettings.x,savedSettings.y)
     
 
@@ -63,32 +66,16 @@ function br:InitializeToolbar()
     local brEnableButton = AF.CreateButton(toolbarFrame,nil,"red",40,40)
     brEnableButton:SetPoint("TOPLEFT",0,0)
     brEnableButton:SetTexture("classicon-" .. strlower(PlayerUtil.GetClassFile()),{34,34},{"CENTER",0,0},true) --inv_10_gearupgrade_flightstone_black
-    if br.pulse then
-            brEnableButton:SetBorderHighlightColor("green")
-            brEnableButton:SetBorderColor("green")
-    else
-            brEnableButton:SetBorderHighlightColor("red")
-            brEnableButton:SetBorderColor("red")
-    end
+    br:ToggleToolbarColor(brEnableButton,br.pulse)
     AF.SetTooltips(brEnableButton,"TOPLEFT",-10,0,"Toggle BR Lite Pulse.  Pulse is the main loop that runs the rotation.")
     brEnableButton:SetScript("OnClick",function()
         br.pulse = not br.pulse
-        if br.pulse then
-            brEnableButton:SetBorderHighlightColor("green")
-            brEnableButton:SetBorderColor("green")
-            Log:Log("BR Lite Pulse Enabled")
-            Settings:SetSetting("BR_ENABLED",true)
-        else
-            brEnableButton:SetBorderHighlightColor("red")
-            brEnableButton:SetBorderColor("red")
-            Log:Log("BR Lite Pulse Disabled")
-            Settings:SetSetting("BR_ENABLED",false)
-        end
+        br:ToggleToolbarColor(brEnableButton,br.pulse)
     end)
+    toolbarFrame.brEnableButton = brEnableButton
 
     local brEnableFishing = AF.CreateButton(toolbarFrame,nil,"red",40,40)
     brEnableFishing:SetPoint("TOPLEFT",40,0)
-    
     local brEnableFishingInnerFrame = AF.CreateFrame(brEnableFishing,nil,36,36)
     brEnableFishingInnerFrame:SetPoint("CENTER",0,0)
     local tex = brEnableFishingInnerFrame:CreateTexture(nil,"ARTWORK")
@@ -96,22 +83,13 @@ function br:InitializeToolbar()
     tex:SetSize(30,30)
     tex:SetPoint("CENTER",0,0)  
     tex:SetAllPoints(brEnableFishingInnerFrame)
-
-
-    -- brEnableFishing:SetTexture("Interface\\Icons\\ui_profession_fishing",{"CENTER",0,0},true)
-    brEnableFishing:SetBorderHighlightColor("red")
-    brEnableFishing:SetBorderColor("red")
+    br:ToggleToolbarColor(brEnableFishing,br.Fishing.Active)
     AF.SetTooltips(brEnableFishing,"TOPLEFT",-10,0,"Toggle Auto Fishing.")
     brEnableFishing:SetScript("OnClick",function()
         br.Fishing.Active = not br.Fishing.Active
+        br:ToggleToolbarColor(brEnableFishing,br.Fishing.Active)
         if br.Fishing.Active then
-            brEnableFishing:SetBorderHighlightColor("green")
-            brEnableFishing:SetBorderColor("green")
              br.Fishing:Fish()
-        else
-            brEnableFishing:SetBorderHighlightColor("red")
-            brEnableFishing:SetBorderColor("red")
-           
         end
     end)
 
@@ -210,8 +188,33 @@ function br:InitializeToolbar()
             Settings:SetSetting("BR_LOOTING_ENABLED",false)
         end
     end)
+
+    -- local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
+    -- brDebug:SetPoint("TOPLEFT",200,0)
+    -- AF.SetTooltips(brDebug,"TOPLEFT",-10,0,"Toggle Debug Mode.")
+    -- local brDebugInnerFrame = AF.CreateFrame(brDebug,nil,36,36)
+    -- brDebugInnerFrame:SetPoint("CENTER",0,0)
+    -- local DebugTex = brDebugInnerFrame:CreateTexture(nil,"ARTWORK")
+    -- DebugTex:SetTexture(136243)
+    -- DebugTex:SetSize(30,30)
+    -- DebugTex:SetPoint("CENTER",0,0)
+    -- DebugTex:SetAllPoints(brDebugInnerFrame)
+    -- brDebug:SetScript("OnClick",function()
+    --     ---@type Unit
+    --     local target = br.ActivePlayer:TargetUnit()
+    --     if target then
+    --         Log:Log("Debug Info for target: " .. target.name)
+    --         Log:Log("Unit is Dead or Ghost: " .. tostring(UnitIsDeadOrGhost(target.WoWGUID)))
+    --         Log:Log("Lootable Count: " .. tostring(br.ObjectManager:LootableCount()))
+    --         Log:Log("Skinnable Count: " .. tostring(br.ObjectManager:SkinnableCount()))
+    --         Log:Log("Loot Status: " .. tostring(br.ObjectLootable(target.guid)))
+    --         Log:Log("Is Skinnable: " .. tostring(br.ObjectSkinnable(target.guid)))
+
+    --     end
+    -- end)
     br.TOOLBAR = toolbarFrame
 end    
+
 
 
 

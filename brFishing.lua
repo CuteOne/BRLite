@@ -8,15 +8,11 @@ local Log,Settings = br.Logging,br.Settings
 local Fishing =  {}
 Fishing.Active = false
 
-
-
-
 function Fishing:Fish()
     local player = br.ActivePlayer
     if player.InCombat then
         Log:Log("Cannot fish while in combat.")
         self.Active = false
-        br.WINDOW_SETTINGS.updateFishingStatus()
         return
     end
     local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, spellId = UnitChannelInfo("player")
@@ -43,15 +39,6 @@ g:SetScript("OnEvent", function(self, event, id)
          local callbackTime = math.random(200,400)/1000
         C_Timer.After(callbackTime, function()
             ConfirmLootSlot(id)
-        end)
-        
-    end
-    if event == "EQUIP_BIND_CONFIRM" then
-        Log:Log(" Equip Bind Confirmed for ID: " .. tostring(id))
-         local callbackTime = math.random(200,400)/1000
-        C_Timer.After(callbackTime, function()
-           br.ConfirmBindOnUse()
-           
         end)
         
     end
