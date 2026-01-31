@@ -284,7 +284,7 @@ function om:EnemiesFacingMelee()
              then
             local angle2 = br.ObjectFacing(br.ActivePlayer.guid)                
             local angle1 = br.ObjectFacing(v.guid)
-            Log:Log("Unit: " .. v.name .. " Facing Angle: " .. angle1 .. " Rad")
+           -- Log:Log("Unit: " .. v.name .. " Facing Angle: " .. angle1 .. " Rad")
             local angle3 = 0
             local Y1,X1,Z1 = br.ActivePlayer.X, br.ActivePlayer.Y, br.ActivePlayer.Z
             local Y2,X2,Z2 = v.Y, v.X, v.Z
@@ -307,7 +307,7 @@ function om:EnemiesFacingMelee()
 			elseif deltaX < 0 then
 				angle2 = math.deg(math.atan(deltaY / deltaX) + (math.pi / 2))
 			end
-            print("Angle1: " .. angle1  .. " Angle2: " .. angle2)
+           -- print("Angle1: " .. angle1  .. " Angle2: " .. angle2)
 			if angle2 - angle1 > 180 then
 				angle3 = math.abs(angle2 - angle1 - 360)
 			elseif angle1 - angle2 > 180 then
@@ -315,7 +315,7 @@ function om:EnemiesFacingMelee()
 			else
 				angle3 = math.abs(angle2 - angle1)
 			end
-            Log:Log("Unit: " .. v.name .. " Angle to Player Facing: " .. angle3)
+            --Log:Log("Unit: " .. v.name .. " Angle to Player Facing: " .. angle3)
             if angle3 < 90 then 
                 enemies[i] = v
                 i = i + 1

@@ -310,7 +310,6 @@ end
 ---@field up table<string, fun(): boolean> @Returns whether the buff is currently active
 ---@field down table<string, fun(): boolean> @Returns whether the buff is currently inactive
 ---@field stacks table<string, fun(): number> @Returns the current stack count of the buff
----@field points table<string, fun(pointNumber: number): number> @Returns the point data of the buff
 ---@field remaining table<string, fun(): number> @Returns the remaining duration of the buff in seconds
 Player.buffs = {}
 function Player:BuffSetup(AuraList)
@@ -319,7 +318,6 @@ function Player:BuffSetup(AuraList)
     self.buffs.down={}
     self.buffs.stacks={}
     self.buffs.remaining={}
-    self.buffs.points={}
     for auraName,auraID in pairs(AuraList) do
         self.buffs.up[auraName] = function()
             return C_UnitAuras.GetPlayerAuraBySpellID(auraID) ~= nil
@@ -340,7 +338,6 @@ function Player:BuffSetup(AuraList)
                 return stacks or 0
             end
         end
-
 
         self.buffs.remaining[auraName] = function()
             ---@type AuraData|nil
@@ -759,6 +756,20 @@ function Player:HasSkinning()
         end
     end
     return false;
+end
+
+
+function Player:IsHeroClass(classId)
+    classId = classId or 0
+    -- return false for early pre Hero client versions (pre 11)
+    if not C_ClassTalents and not C_ClassTalents.GetActiveHeroTalentSpec then
+        return false
+    end
+    local specId = C_ClassTalents.GetActiveHeroTalentSpec()
+    if specId == nil then
+        return false
+    end
+    return specId == classId
 end
 
 

@@ -25,6 +25,13 @@ local SpellList = {
     Bonestorm = 194844,
     DeathCoil = 47541,
     DeathStrike = 49998,
+    MindFreeze = 47528,
+    ReapersMark = 439843,
+    BloodBoil = 50842,
+    SoulReaper = 343294,
+    BloodDrinker = 206931,
+    Marrowrend = 195182,
+    RaiseDead = 46585,
 
 
 }
@@ -44,11 +51,22 @@ local AuraList = {
     RuneMastery = 374585,
     VampiricBlood = 55233,    
     ChainsOfIce = 45524,
+    Lichborne = 49039,
+    Exterminate = 441416,
+    Bonestorm = 194844,
+    ReaperOfSouls = 469172,
 
 }
 
-local TalentList = {
+local HeroTalentList = {
+    --https://warcraft.wiki.gg/wiki/API_C_ClassTalents.GetActiveHeroTalentSpec
+    Sanlayn = 31,
+    RiderOfTheApocalypse = 32,
+    Deathbringer=33,
+}
 
+local TalentList = {
+    ShatteringBone=377640,
    
 }
 
@@ -116,7 +134,41 @@ local function Defensive()
     return false
 end
 
+local function actions_db_cds()
+    if player:IsHeroClass(HeroTalentList.Deathbringer) then
+        --log:Log("Using Deathbringer Cooldowns")
+       if cast.able.ReapersMark()  then cast.ReapersMark() return true end
+       if cast.able.DancingRuneWeapon() then cast.DancingRuneWeapon("player") return true end
+       
+       --bonestorm,if=buff.bone_shield.stack>=5&(!talent.shattering_bone.enabled|death_and_decay.ticking)
+       if buffs.stacks.BoneShield() >= 5 
+       and (not player:HasTalent(TalentList.ShatteringBone) or 
+            buffs.up.DeathAndDecay())
+       then 
+            if cast.able.Bonestorm("player")  then cast.Bonestorm("player") return true end
+       end
+
+       --tombstone,if=buff.bone_shield.stack>=8&(!talent.shattering_bone.enabled|death_and_decay.ticking)&cooldown.dancing_rune_weapon.remains>=25
+       if buffs.stacks.BoneShield() >= 8 and 
+          (not player:HasTalent(TalentList.ShatteringBone) or 
+           buffs.up.DeathAndDecay()) and
+          (cast.cdRemains.DancingRuneWeapon() >= 25)
+       then 
+            if cast.able.Tombstone("player")  then cast.Tombstone("player") return true end
+       end
+
+       if cast.able.RaiseDead() then
+            return cast.RaiseDead("player")     
+       end
+    end
+    return false
+end
+
 local function Pulse()
+    buffs = br.ActivePlayer.buffs
+    target = br.ActivePlayer:TargetUnit()
+    runicPower = br.ActivePlayer:Power()
+    runes = br.ActivePlayer:AlternatePower(Enum.PowerType.Runes)
 
    
 
@@ -141,62 +193,109 @@ local function Pulse()
     if not UnitCanAttack("player","target") then return end
     target = player:TargetUnit()
     if not target then return end
+    meleeRange = target:Distance() <= 7.5
 
     player:EnsureFacing(target)
     player:CloseToMelee(target)
-    
-            if player:HealthPercent() < 90 and 
-                cast.able.Bonestorm("player") 
-                and buffs.points.BoneShield(2) >= 10 then
-                    return cast.Bonestorm("player")
-            end
-            if player:HealthPercent() < 76 and 
-                cast.able.DeathCoil("player") 
-                and runicPower >= 40 then
-                    return cast.DeathCoil("player")
-            end
 
-        --#endregion Defenses
-
-        if cast.able.DeathStrike("target") and (player:HealthPercent() < 90 or runicPower >= 100 ) then
-            return cast.DeathStrike("target")
+    if target:IsInterruptable() then
+        if cast.able.MindFreeze()  then
+            return cast.MindFreeze("target")    
         end
+    end
 
 
-        if cast.able.DeathsCaress() and meleeRange then
-            return cast.DeathsCaress("target")
-        end
+    -- Tactical combat defensive, bonestorm heals for max of 10% so use at 90%
+    if player:HealthPercent() < 90 and 
+        cast.able.Bonestorm("player") 
+        and buffs.stacks.BoneShield() >= 10 then
+            return cast.Bonestorm("player")
+    end
 
-        if not player:IsAuto() and meleeRange then
-            return player:StartAutoAttack()
-        end
+    -- Tactical combat defensive. If we're low on health and are undead
+    -- with Lichborne then cast a Death Coil for some healing
+    if player:HealthPercent() < 76 and 
+        buffs.up.Lichborne() and
+        cast.able.DeathCoil("player") then
+            return cast.DeathCoil()
+    end
 
-        if cast.able.DancingRuneWeapon() and meleeRange then
-            return cast.DancingRuneWeapon("player")
-        end
+    --if we aren't auto attacking then start
+    if not player:IsAuto() then player:StartAutoAttack() return end
 
-        if not buffs.up.DeathAndDecay() and 
-            cast.able.DeathAndDecay() and 
-            not player:IsMoving() and
-            meleeRange
-            then
-                return cast.atTargetGround.DeathAndDecay(player)
-        end
+    --Begin main rotation
+    --taken from SC 1115-02
 
-        --VampiricBlood
-        if not buffs.up.VampiricBlood() and cast.able.VampiricBlood() then
-            return cast.VampiricBlood("player")
-        end
+    --vampiric_blood,if=!buff.vampiric_blood.up
+    if not buffs.up.VampiricBlood() and cast.able.VampiricBlood() then
+        return cast.VampiricBlood("player")
+    end
 
-        --Chains of Ice Debuff
-        if not br.Debuffs.up.ChainsOfIce(target) and 
-            cast.able.ChainsOfIce() and 
-            meleeRange 
+    --Deathbringer Cooldowns
+    if actions_db_cds() then return true end
+    log:Log("Past CDs")
+
+    if not buffs.up.DeathAndDecay() and 
+        cast.able.DeathAndDecay() and 
+        not player:IsMoving() and
+        meleeRange
         then
-            return cast.ChainsOfIce("target")
+            return cast.atTargetGround.DeathAndDecay(player)
         end
-
     
+
+    if cast.able.DeathStrike("target")  then
+        return cast.DeathStrike("target")
+    end
+
+    if buffs.up.Exterminate() and cast.able.Marrowrend() then
+        return cast.Marrowrend("target")
+    end
+
+    if buffs.stacks.BoneShield() < 6 and not buffs.up.Bonestorm()
+         and cast.able.Marrowrend() then
+        return cast.Marrowrend("target")
+    end
+
+    if buffs.up.DancingRuneWeapon() and cast.able.BloodBoil("player") then
+        return cast.BloodBoil("player")
+    end
+    if buffs.up.ReaperOfSouls() and cast.cdRemains.DancingRuneWeapon() > 1 then
+        if cast.able.SoulReaper() then
+            return cast.SoulReaper()
+        end
+    end
+
+    if cast.able.DeathStrike() then
+        return cast.DeathStrike("target")
+    end
+
+    if cast.able.Consumption() then
+        return cast.Consumption("target")
+    end
+
+    if cast.able.BloodBoil("player") and meleeRange then
+        return cast.BloodBoil("player")
+    end
+
+    if cast.able.HeartStrike() then
+        return cast.HeartStrike("target")
+    end
+
+    -- if cast.able.BloodBoil("player") and meleeRange then
+    --     return cast.BloodBoil("player") 
+    -- end
+
+    -- if cast.able.HeartStrike() then
+    --     return cast.HeartStrike("target")   
+    -- end
+
+    if buffs.stacks.BoneShield()  >= 11 then
+        if cast.able.DeathsCaress() and meleeRange then
+            return cast.DeathsCaress("target")      
+        end
+    end
+
 
 end
 

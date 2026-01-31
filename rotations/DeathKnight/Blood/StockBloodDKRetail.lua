@@ -145,7 +145,7 @@ local function Pulse()
 
             if player:HealthPercent() < 90 and 
                 cast.able.Bonestorm("player") 
-                and buffs.points.BoneShield(2) >= 10 then
+                and buffs.stacks.BoneShield() >= 10 then
                     return cast.Bonestorm("player")
             end
             if player:HealthPercent() < 76 and 
