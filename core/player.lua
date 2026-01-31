@@ -642,7 +642,9 @@ function Player:TargetClosestInMeleeRange()
         if v:Distance() <= 10 and
             v:IsAlive() and
             not v:IsPlayersControl() and
-            v:IsTargettingPlayer()
+            UnitCanAttack("player",v.WoWGUID) and
+            UnitIsEnemy("player",v.WoWGUID)
+            --v:IsTargettingPlayer()
         then
             local distance = v:Distance()
             if distance < bestDistance then

@@ -179,7 +179,10 @@ local function Pulse()
     -- Return if we're busy channelling/Casting/Crafting/Gathering/etc
     -- Hopefully this will keep us from breaking gathering if we are 
     -- attacked but it isn't strong enough to interrupt the process
-    if player:IsBusy() or player:IsMounted() or UnitIsDeadOrGhost("player") then return end
+    if player:IsBusy() or 
+            player:IsMounted() or 
+            UnitIsDeadOrGhost("player")  
+            then return end
 
     --Any Defensive spells or out of combat buffs, etc.
     if Defensive() then return true end
@@ -192,7 +195,7 @@ local function Pulse()
     --One final check for validity before we bail back to the rotation manager
     if not UnitCanAttack("player","target") then return end
     target = player:TargetUnit()
-    if not target then return end
+    if not target or UnitIsDeadOrGhost("target") then return end
     meleeRange = target:Distance() <= 7.5
 
     player:EnsureFacing(target)
@@ -233,7 +236,6 @@ local function Pulse()
 
     --Deathbringer Cooldowns
     if actions_db_cds() then return true end
-    log:Log("Past CDs")
 
     if not buffs.up.DeathAndDecay() and 
         cast.able.DeathAndDecay() and 
@@ -281,14 +283,6 @@ local function Pulse()
     if cast.able.HeartStrike() then
         return cast.HeartStrike("target")
     end
-
-    -- if cast.able.BloodBoil("player") and meleeRange then
-    --     return cast.BloodBoil("player") 
-    -- end
-
-    -- if cast.able.HeartStrike() then
-    --     return cast.HeartStrike("target")   
-    -- end
 
     if buffs.stacks.BoneShield()  >= 11 then
         if cast.able.DeathsCaress() and meleeRange then
