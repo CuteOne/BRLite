@@ -32,6 +32,7 @@ local SpellList = {
     BloodDrinker = 206931,
     Marrowrend = 195182,
     RaiseDead = 46585,
+    DeathGrip = 49576,
 
 
 }
@@ -55,6 +56,7 @@ local AuraList = {
     Exterminate = 441416,
     Bonestorm = 194844,
     ReaperOfSouls = 469172,
+    DeathGrip = 51399,
 
 }
 
@@ -138,7 +140,7 @@ local function actions_db_cds()
     if player:IsHeroClass(HeroTalentList.Deathbringer) then
         --log:Log("Using Deathbringer Cooldowns")
        if cast.able.ReapersMark()  then cast.ReapersMark() return true end
-       if cast.able.DancingRuneWeapon() then cast.DancingRuneWeapon("player") return true end
+       if cast.able.DancingRuneWeapon() and target:Distance() <= 10 then cast.DancingRuneWeapon("player") return true end
        
        --bonestorm,if=buff.bone_shield.stack>=5&(!talent.shattering_bone.enabled|death_and_decay.ticking)
        if buffs.stacks.BoneShield() >= 5 
@@ -157,7 +159,7 @@ local function actions_db_cds()
             if cast.able.Tombstone("player")  then cast.Tombstone("player") return true end
        end
 
-       if cast.able.RaiseDead() then
+       if cast.able.RaiseDead() and target:Distance() <= 10 then
             return cast.RaiseDead("player")     
        end
     end
@@ -204,6 +206,27 @@ local function Pulse()
     if target:IsInterruptable() then
         if cast.able.MindFreeze()  then
             return cast.MindFreeze("target")    
+        end
+    end
+
+    --Look for any likely unengaged targets within 30 yards to pull, if pull mode is enabled
+    --We want to do this about 5 seconds into combat to allow for any initial aggro to settle
+    if br.PullMode and player.InCombat then 
+        local pullTarget = player:FindNonTargetingWithinRange(10,30)
+        if pullTarget then
+            if cast.able.DeathGrip(pullTarget.WoWGUID) and not 
+                br.Debuffs.up.DeathGrip(target)  
+                and player:CombatTime() > 5
+                --and not player.LastCastSpell == SpellList.DeathGrip then
+                then
+                    log:Log("Pulling target: " .. pullTarget.name .. " with Death Grip")
+                    --local target = player:TargetUnit()
+                    player:EnsureFacing(pullTarget)
+                    br.SetFocus(pullTarget.guid)
+                    --br.TargetUnit("focus")
+                    return cast.DeathGrip("focus")
+
+            end
         end
     end
 
@@ -272,7 +295,7 @@ local function Pulse()
         return cast.DeathStrike("target")
     end
 
-    if cast.able.Consumption() then
+    if cast.able.Consumption() and target:Distance() <= 10 then
         return cast.Consumption("target")
     end
 

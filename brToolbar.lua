@@ -50,7 +50,7 @@ function br:InitializeToolbar()
     end
 
     ---@type AF_BorderedFrame
-    local toolbarFrame = AF.CreateBorderedFrame(AF.UIParent,"TOOLBAR_FRAME",savedSettings.width,savedSettings.height,"white","black")
+    local toolbarFrame = AF.CreateBorderedFrame(AF.UIParent,"TOOLBAR_FRAME",240,savedSettings.height,"white","black")
     AF.SetPoint(toolbarFrame,savedSettings.point,savedSettings.x,savedSettings.y)
     
 
@@ -188,6 +188,39 @@ function br:InitializeToolbar()
             Settings:SetSetting("BR_LOOTING_ENABLED",false)
         end
     end)
+
+    local PullModeButton = AF.CreateButton(toolbarFrame,nil,"green",40,40)
+    PullModeButton:SetPoint("TOPLEFT",200,0)
+    AF.SetTooltips(PullModeButton,"TOPLEFT",-10,0,"Toggle Pull Mode.  In Pull Mode, BR will use your pull rotation.")
+    local PullModeInnerFrame = AF.CreateFrame(PullModeButton,nil,36,36)
+    PullModeInnerFrame:SetPoint("CENTER",0,0)
+    local PullTex = PullModeInnerFrame:CreateTexture(nil,"ARTWORK")
+    PullTex:SetTexture(450905)
+    PullTex:SetSize(30,30)
+    PullTex:SetPoint("CENTER",0,0)
+    if br.PullMode then
+        PullModeButton:SetBorderHighlightColor("green")
+        PullModeButton:SetBorderColor("green")
+    else
+        PullModeButton:SetBorderHighlightColor("red")
+        PullModeButton:SetBorderColor("red")
+    end
+    PullTex:SetAllPoints(PullModeInnerFrame)
+    PullModeButton:SetScript("OnClick",function()
+        br.PullMode = not br.PullMode
+        if br.PullMode then
+            PullModeButton:SetBorderHighlightColor("green")
+            PullModeButton:SetBorderColor("green")
+            Log:Log("Pull Mode Enabled")
+            Settings:SetSetting("BR_PULL_MODE_ENABLED",true)
+        else
+            PullModeButton:SetBorderHighlightColor("red")
+            PullModeButton:SetBorderColor("red")
+            Log:Log("Pull Mode Disabled")
+            Settings:SetSetting("BR_PULL_MODE_ENABLED",false)
+        end
+    end)
+
 
     -- local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
     -- brDebug:SetPoint("TOPLEFT",200,0)

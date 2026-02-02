@@ -255,7 +255,7 @@ function Player:SetupSpells(SpellList)
                 if unit == nil then
                     return false
                 end
-                log:LogCast(tostring(spell) .. " at ground of " .. tostring(unit.name))
+                log:LogCast(tostring(spell) .. " at ground of Target")
                 self.cast.last = id
                 Player.LastCastSpell = id
                 ---@type SpellInfo
@@ -633,7 +633,34 @@ function Player:FindTarget30()
     end
     return nil
 end
+--TODO: Optimize these target functions to avoid code duplication
+function Player:TargetWeakestInMeleeRange()
+    local bestTarget = nil
+    local lowestHealth = math.huge
+    br.ObjectManager:Update()
+    for _,v in pairs(br.ObjectManager.Units) do
+        if v:Distance() <= 10 and
+            v:IsAlive() and
+            not v:IsPlayersControl() and
+            UnitCanAttack("player",v.WoWGUID) and
+            UnitIsEnemy("player",v.WoWGUID)
 
+        then
+            local health = v:Health()
+            if health < lowestHealth then
+                lowestHealth = health
+                bestTarget = v
+            end
+        end
+    end
+    if bestTarget then
+        log:LogTargetChange(bestTarget)
+        br.SetFocus(bestTarget.guid)
+        br.TargetUnit("focus")
+    else
+        log:Log("No valid melee target found.")
+    end
+end
 function Player:TargetClosestInMeleeRange()
     local bestTarget = nil
     local bestDistance = math.huge
@@ -644,7 +671,7 @@ function Player:TargetClosestInMeleeRange()
             not v:IsPlayersControl() and
             UnitCanAttack("player",v.WoWGUID) and
             UnitIsEnemy("player",v.WoWGUID)
-            --v:IsTargettingPlayer()
+
         then
             local distance = v:Distance()
             if distance < bestDistance then
@@ -660,6 +687,21 @@ function Player:TargetClosestInMeleeRange()
     else
         log:Log("No valid melee target found.")
     end
+end
+
+function Player:FindNonTargetingWithinRange(minrange,maxrange)
+    for _,v in pairs(br.ObjectManager.Units) do
+        if v:Distance() <= maxrange and
+            v:Distance() >= minrange and
+            v:IsAlive() and
+            not v:IsTargettingPlayer() and
+            UnitIsEnemy("player",v.WoWGUID) and
+            UnitCanAttack("player",v.WoWGUID)
+        then
+            return v
+        end
+    end
+    return nil
 end
 
 function Player:TargetBest()

@@ -31,6 +31,7 @@ function br.Framework:Startup()
     br.DoMovement = Settings:GetSettingToggle("BR_MOVEMENT_ENABLED",true)
     br.DoFacing = Settings:GetSettingToggle("BR_FACING_ENABLED",true)
     br.DoLooting = Settings:GetSettingToggle("BR_LOOTING_ENABLED",true)
+    br.PullMode = Settings:GetSettingToggle("BR_PULL_MODE_ENABLED",false)
     
 
     br.UI.Elements.MinimapIcon:Initialize()

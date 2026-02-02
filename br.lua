@@ -59,6 +59,7 @@ br.Fishing = nil
 br.Looting = nil
 br.Skinning = nil
 br.Gathering = nil
+br.PullMode = false
 
 
 -- AF Windows
