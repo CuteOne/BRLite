@@ -140,7 +140,6 @@ function om:Update()
     else
         br.ActivePlayer:UpdateLocation(x,y,z)
         if br.ActivePlayer.guid ~= objs[1] then
-            Log:Log("Active Player GUID changed from " .. tostring(br.ActivePlayer.guid) .. " to " .. tostring(objs[1]))    
             br.ActivePlayer.guid = objs[1]
             br.ActivePlayer.WoWGUID = UnitGUID("player")
         end

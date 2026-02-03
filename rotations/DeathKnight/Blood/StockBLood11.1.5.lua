@@ -72,39 +72,11 @@ local TalentList = {
    
 }
 
-local ToggleOptions = {
-    ["RotationMode"] = 
-        {
-            ["values"] = {"On","Off"},
-            ["default"] = "On",
-            ["Icon"] = "Interface\\Icons\\ability_monk_roundhousekick",
-            ["tooltip"] = "Turn the Rotation On or Off",
-        },
-    ["AOEMode"] = {
-            ["values"] = {"On","Off"},
-            ["default"] = "Off",
-            ["Icon"] = "Interface\\Icons\\aability_monk_cranekick",
-            ["tooltip"] = "Turn AOE Mode On or Off",
-        },
-}
 
------------------------------------------------------
---- Create Toggles
---- Creates toggle buttons that will appear in the UI
---- When the rotation is active
-------------------------------------------------------
-local function CreateToggles()
-    --No toggles for this basic rotation
-end
-
------------------------------------------------------
---- Create options
---- Creates options that will appear in the configuration
---- UI when the rotation is selected
-------------------------------------------------------
-local function CreateOptions()
-    --No options for this basic rotation
-end
+--TODO: Handle rotation special Toggles/Options. Do we even do it?
+local ToggleOptions = {}
+local function CreateToggles() end
+local function CreateOptions() end
 
 ---@type br.Logging
 local log    = br.Logging
@@ -121,15 +93,6 @@ local runes = br.ActivePlayer:AlternatePower(Enum.PowerType.Runes)
 local meleeRange = false
 
 
-
-
-local function boolNumeric(value)
-    if value then
-        return 1
-    else
-        return 0
-    end
-end
 
 local function Defensive()
     -- No defensive logic for this basic rotation
@@ -190,9 +153,13 @@ local function Pulse()
     if Defensive() then return true end
 
     --Check for a valid Target if not find one
-    if player.InCombat and not player:ValidTarget("target") then
+    if player.InCombat and not player:ValidTarget("target")  then
         player:TargetClosestInMeleeRange()
     end
+
+    --Testing Instance Priority Targeting
+    player:InstanceSetPriorityTarget()
+
 
     --One final check for validity before we bail back to the rotation manager
     if not UnitCanAttack("player","target") then return end
@@ -214,16 +181,13 @@ local function Pulse()
     if br.PullMode and player.InCombat then 
         local pullTarget = player:FindNonTargetingWithinRange(10,30)
         if pullTarget then
-            if cast.able.DeathGrip(pullTarget.WoWGUID) and not 
-                br.Debuffs.up.DeathGrip(target)  
+            if cast.able.DeathGrip(pullTarget.WoWGUID) and 
+                not br.Debuffs.up.DeathGrip(target)  
                 and player:CombatTime() > 5
-                --and not player.LastCastSpell == SpellList.DeathGrip then
                 then
                     log:Log("Pulling target: " .. pullTarget.name .. " with Death Grip")
-                    --local target = player:TargetUnit()
                     player:EnsureFacing(pullTarget)
                     br.SetFocus(pullTarget.guid)
-                    --br.TargetUnit("focus")
                     return cast.DeathGrip("focus")
 
             end

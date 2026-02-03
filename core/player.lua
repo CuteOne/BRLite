@@ -158,7 +158,7 @@ function Player:SetupSpells(SpellList)
                     log:LogError("No method to determine if spell is known.")                    
                 end
                 if not isSpellKnown then
-                    log:LogError("Spell " .. tostring(spellid) .. " is not known.")
+                    --log:LogError("Spell " .. tostring(spellid) .. " is not known.")
                     return false
                 end
 
@@ -574,20 +574,36 @@ function Player:StartAutoShot()
     end
 end
 
+function Player:IsSpellKnown(spellId)
+    local isSpellKnown = false
+    if  C_SpellBook.IsSpellInSpellBook then
+       isSpellKnown = C_SpellBook.IsSpellInSpellBook(spellId,Enum.SpellBookSpellBank.Player,true)
+   elseif C_SpellBook.IsSpellKnownOrInSpellBook then
+       isSpellKnown =C_SpellBook.IsSpellKnownOrInSpellBook(spellId,Enum.SpellBookSpellBank.Player,true)
+   elseif IsSpellKnownOrOverridesKnown then
+       isSpellKnown =IsSpellKnownOrOverridesKnown(spellId,false)     
+   else
+       log:LogError("No method to determine if spell is known.")                    
+   end
+   return isSpellKnown
+end
+
 function Player:EnsureMHWeaponEnchant(spellId,AuraId)
-    if self.LastCastSpell == spellId then
+    if self.LastCastSpell == spellId or not self:IsSpellKnown(spellId) then
         return false
     end
     local _, _, _, mainHandEnchantID, _, _, _, _ = GetWeaponEnchantInfo()
     if AuraId and AuraId ~= mainHandEnchantID then
+        --@type SpellInfo
         local spellInfo = C_Spell.GetSpellInfo(spellId)
+        
         log:LogCast("Mainhand Weapon: " .. spellInfo.name)
         br.CastSpellByName(spellInfo.name,"player")
         return true
     end
 end
 function Player:EnsureOHWeaponEnchant(spellId,AuraId)
-    if self.LastCastSpell == spellId then
+    if self.LastCastSpell == spellId or not self:IsSpellKnown(spellId) then
         return false
     end
     local _, _, _, _, _, _, _, offHandEnchantID = GetWeaponEnchantInfo()
@@ -661,6 +677,7 @@ function Player:TargetWeakestInMeleeRange()
         log:Log("No valid melee target found.")
     end
 end
+
 function Player:TargetClosestInMeleeRange()
     local bestTarget = nil
     local bestDistance = math.huge
@@ -805,7 +822,6 @@ end
 
 function Player:IsHeroClass(classId)
     classId = classId or 0
-    -- return false for early pre Hero client versions (pre 11)
     if not C_ClassTalents and not C_ClassTalents.GetActiveHeroTalentSpec then
         return false
     end
@@ -814,6 +830,76 @@ function Player:IsHeroClass(classId)
         return false
     end
     return specId == classId
+end
+
+-------------------------------------------------------------------
+--- Helper function: returns true if the player is in an instance
+--- -------------------------------------------------------------------
+function Player:IsInInstance() return select(1,IsInInstance()) end
+
+
+function Player:InstanceSetPriorityTarget()
+
+    --if We're not in an instance, do nothing
+    if not self:IsInInstance() then return  end
+
+    --Don't have a target; we might be exiting combat, so do nothing
+    if not Player:ValidTarget("target") then return end
+
+
+    local target = br.ActivePlayer:TargetUnit()
+    if not target then
+        return
+    end
+
+    --get ranking of current Target
+    local bestRank = self:InstancePriorityTarget(target)
+    local bestTarget = target
+    for _,v in pairs(br.ObjectManager.Units) do
+        if v:Distance() <= 10 and not UnitIsDeadOrGhost(v.WoWGUID) then
+            local rank = self:InstancePriorityTarget(v)
+            if rank > bestRank then
+                bestRank = rank
+                bestTarget = v
+            end
+        end
+    end
+
+    if bestTarget and bestTarget.guid ~= target.guid then
+        log:Log("Switching to higher priority target: " .. tostring(bestTarget.name))
+        br.SetFocus(bestTarget.guid)
+        br.TargetUnit("focus")
+    end
+
+end
+
+
+function Player:InstancePriorityTarget(unitToRank)
+    --Test to see if we can prioritize targets while inside of instances
+
+    --TODO Move this to a config file
+    --TODO Expand this to include priority interrupts
+    --     
+    local Priorities = {
+        ["Darkflame Cleft-Normal"] = {          --Darkflame Cleft.  Need to target Overseer's first to minimize how much you get pushed around
+            {name ="Rank Overseer", id = 21121, rank = 99},
+            {name ="Royal Wicklighter", id = 21085, rank = 98},
+        }
+    }
+
+    local inInstance,_ = IsInInstance()
+    if inInstance then
+        local name, _, _, difficultyName, _, _, _, instanceMapId, _ = GetInstanceInfo()
+        local InstanceLookup = name .. "-" .. difficultyName
+        if Priorities[InstanceLookup] then 
+            for _,priority in pairs(Priorities[InstanceLookup]) do
+                if unitToRank.name == priority.name then
+                    return priority.rank
+                end
+            end
+        end
+    end
+    return 0
 end
 
 
