@@ -1,4 +1,4 @@
----@type _,br,NilName
+---@type _,br,_
 local  _,br,nn = ...
 
 ---@type br.Logging, br.Settings
@@ -20,12 +20,21 @@ function br.Framework:Startup()
 
     ---@type AbstractFramework
     local AF = _G.AbstractFramework
+    if not AF and br.unlocker == "DMC" then
+        AF = br.AF
+    end
+
     if not AF then
         Log:LogError("ERROR: AbstractFramework not found. BRLite cannot start.")
         return
     end
-    
-    Settings:Initialize("/scripts/settings","brlite_settings.json")  
+    if br.unlocker == "NN" then
+        Log:Log("Initializing settings for NN Unlocker") 
+        Settings:Initialize("/scripts/settings","brlite_settings.json")  
+    elseif br.unlocker == "DMC" then
+        Log:Log("Initializing settings for DMC Unlocker") 
+        Settings:Initialize("/settings","brlite_settings.json")  
+    end
 
     br.pulse = Settings:GetSettingToggle("BR_ENABLED",true)
     br.DoMovement = Settings:GetSettingToggle("BR_MOVEMENT_ENABLED",true)
@@ -54,9 +63,14 @@ function br.Framework:Startup()
     else        
         specName = "Initial"
     end
-    
-    local rotationPath = "/scripts/brlite/rotations/" .. br.ActivePlayer.ClassName .. "/" .. specName .. "/"
+    local rotationPath = ""
+    if br.unlocker == "NN" then
+        local rotationPath = "/scripts/brlite/rotations/" .. br.ActivePlayer.ClassName .. "/" .. specName .. "/"
+    elseif br.unlocker == "DMC" then
+        rotationPath = "brlite/rotations/" .. br.ActivePlayer.ClassName .. "/" .. specName   .. "/"      
+    end
     local rotFiles = br.ListFiles(rotationPath .. "*.lua")
+    print("Rot Files return: " .. tostring(rotFiles))
     if not rotFiles or #rotFiles == 0 then
         Log:LogError("No rotation files found in path: " .. rotationPath)
         Log:LogError("Please add a rotation for your client version, class, and specialty")
@@ -66,6 +80,7 @@ function br.Framework:Startup()
         return
     end
     for i=1,#rotFiles do
+           Log:Log("Loading Rotation File: " .. rotFiles[i])
            br.RequireFile(rotationPath .. rotFiles[i],br)
     end
     -- Count non sequenced # of pairs in table and store

@@ -2,6 +2,7 @@
     "EARLY": 
     [
         "Libs/LibStub/LibStub.lua",
+        "Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua",
         "Libs/LibDataBroker-1.1/LibDataBroker-1.1.lua",
         "Libs/LibDBIcon-1.0/LibDBIcon-1.0.lua",
         "core/ModuleLoader.lua",
@@ -9,7 +10,6 @@
         "brMinimapIcon.lua",
         "brWindowSettings.lua",
         "brObjectManager.lua",
-        "brCombatManager.lua",
         "brGeometry.lua",
         "brDebuffs.lua",
         "brFishing.lua",
@@ -18,12 +18,23 @@
         "brToolbar.lua",
         "core/RotationBase.lua",
         "core/unit.lua",
-        "core/player.lua",
-        "brFramework.lua"
+        "core/player.lua"
+    ],
+    "TOC-110105":[
+        "brCombatManager.11.0.5.lua"
+    ],
+    "TOC-120000":[
+        "brCombatManager.12.0.0.lua"
     ],
     "UNLOCKER-NN": 
     [
         "unlocker/nn.lua"
     ],
-    "LATE":    [    ]
+    "UNLOCKER-DMC": 
+    [
+        "unlocker/dmc.lua"
+    ],
+    "LATE":    [
+        "brFramework.lua"
+    ]
 }

@@ -33,6 +33,7 @@ local SpellList = {
     Marrowrend = 195182,
     RaiseDead = 46585,
     DeathGrip = 49576,
+    DeathsAdvance = 48265,
 
 
 }
@@ -57,6 +58,7 @@ local AuraList = {
     Bonestorm = 194844,
     ReaperOfSouls = 469172,
     DeathGrip = 51399,
+    DeathsAdvance = 48265,
 
 }
 
@@ -71,6 +73,17 @@ local TalentList = {
     ShatteringBone=377640,
    
 }
+
+--Specific counters to target's spells/abilities
+local Counters = {
+    {   target="Rank Overseer",
+        spell="Wild Wallop",
+        counter=SpellList.DeathsAdvance,
+        auraIgnore=AuraList.DeathsAdvance,
+        spellTarget="player",
+     },
+}
+   
 
 
 --TODO: Handle rotation special Toggles/Options. Do we even do it?
@@ -170,10 +183,27 @@ local function Pulse()
     player:EnsureFacing(target)
     player:CloseToMelee(target)
 
+    --Interrupts
     if target:IsInterruptable() then
         if cast.able.MindFreeze()  then
             return cast.MindFreeze("target")    
         end
+    end
+
+
+    --Preventatives/Counters
+    --Death's Advance
+    if target and target:IsCasting() then
+        if player:HandleCounter(Counters,target) then return true end
+        -- --See if the cast is one that we want to use Death's Advance for
+        -- local castName,TTF = target:CastNameAndTTF()
+        -- if castName then
+        --     --Make sure we're not going to waste the DA by using it on a target that will die before the cast finishes
+        --     if requiresDeathsAdvance(castName) and target:TTD() > TTF then
+        --         log:Log("Using Death's Advance to prevent " .. castName .. " from " .. target.name)
+        --         return cast.DeathsAdvance("player")
+        --     end
+        -- end
     end
 
     --Look for any likely unengaged targets within 30 yards to pull, if pull mode is enabled
@@ -216,8 +246,8 @@ local function Pulse()
     --Begin main rotation
     --taken from SC 1115-02
 
-    --vampiric_blood,if=!buff.vampiric_blood.up
-    if not buffs.up.VampiricBlood() and cast.able.VampiricBlood() then
+    --vampiric_blood,if=!buff.vampiric_blood.up and target.distance<=10 so we don't waste it as we are navigating to the target
+    if not buffs.up.VampiricBlood() and cast.able.VampiricBlood() and target:Distance() <= 10 then
         return cast.VampiricBlood("player")
     end
 
@@ -249,9 +279,11 @@ local function Pulse()
     if buffs.up.DancingRuneWeapon() and cast.able.BloodBoil("player") then
         return cast.BloodBoil("player")
     end
-    if buffs.up.ReaperOfSouls() and cast.cdRemains.DancingRuneWeapon() > 1 then
-        if cast.able.SoulReaper() then
-            return cast.SoulReaper()
+    if buffs.up.ReaperOfSouls() then
+        if cast.cdRemains.DancingRuneWeapon() > 1 then
+            if cast.able.SoulReaper() then
+                return cast.SoulReaper()
+            end
         end
     end
 

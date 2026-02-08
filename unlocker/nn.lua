@@ -35,7 +35,6 @@ br.ScreenToWorld                = nn.ScreenToWorld
 br.SetMouseOver                 = nn.SetMouseover
 br.SetPlayerFacing              = nn.SetPlayerFacing
 br.SetFocus                     = nn.SetFocus
---br.TargetUnit                   = nn.TargetUnit
 br.TraceLine                    = nn.TraceLine
 br.WorldToScreen                = nn.WorldToScreen
 br.FileExists                   = nn.FileExists
@@ -55,15 +54,15 @@ br.DeleteFile                   = nn.DeleteFile
 br.ListFiles                    = nn.ListFiles
 br.UnitTarget                  = nn.UnitTarget
 br.ObjectPointer               = nn.ObjectPointer
-br.ClickPosition = nn.ClickPosition
-br.ClickToMove = nn.ClickToMove
-br.ObjectAnimationFlag        = nn.ObjectAnimationFlag
-br.SendMovementHeartbeat     = nn.SendMovementHeartbeat
-br.UnitTarget = nn.UnitTarget
-br.GetFocus = nn.GetFocus
-br.LibDraw = nn.Utils.Draw:New()
-br.ObjectField = nn.ObjectField
-br.ObjectFlags = nn.ObjectFlags
+br.ClickPosition               = nn.ClickPosition
+br.ClickToMove                 = nn.ClickToMove
+br.ObjectAnimationFlag         = nn.ObjectAnimationFlag
+br.SendMovementHeartbeat       = nn.SendMovementHeartbeat
+br.UnitTarget                  = nn.UnitTarget
+br.GetFocus                    = nn.GetFocus
+br.LibDraw                     = nn.Utils.Draw:New()
+br.ObjectField                 = nn.ObjectField
+br.ObjectFlags                 = nn.ObjectFlags
 
 
 
@@ -77,7 +76,6 @@ br.CastSpell                =  function(...) return nn.Unlock("CastSpell",...) e
 br.CastSpellByID            =  function(...) return nn.Unlock("CastSpellByID",...) end
 br.CastSpellByName          =  function(...) return nn.Unlock("CastSpellByName",...) end
 br.ClearTarget              =  function() return nn.Unlock("ClearTarget") end
---br.ClickPosition            =  function(...) return nn.Unlock("ClickPosition",...) end  
 br.FocusUnit                =  function(...) return nn.Unlock("FocusUnit",...) end
 br.ForceQuit                =  function() return nn.Unlock("ForceQuit") end
 br.Logout                   =  function() return nn.Unlock("Logout") end
@@ -101,4 +99,6 @@ br.TargetNearestEnemy       =  function(...) return nn.Unlock("TargetNearestEnem
 br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
 br.FollowUnit               = function(...) return nn.Unlock("FollowUnit",...) end
 br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
-br.Logging:Log("nn Unlocker Loaded");
+br.Logout                   = function() return nn.Unlock("Logout") end
+
+br.Logging:Log("nn Unlocker Loaded")

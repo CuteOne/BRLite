@@ -34,6 +34,8 @@ local SpellList = {
     ElementalBlast = 117014,
     PrimordialWave = 375982,
     EarthShield = 974,
+    WindShear = 57994,
+    FrostShock = 196840,
 
 }
 
@@ -64,7 +66,8 @@ local AuraList = {
     Windfury = 5401,
     FlameTongue = 5400,
     LashingFlames=334168,
-    EarthShield=383648,
+    EarthShield=974,
+    FrostShock = 196840,
 }
 
 local TalentList = {
@@ -74,6 +77,7 @@ local TalentList = {
     LegacyofTheFrostWitch = 384452,
     DeeplyRootedElements = 378270,
     Ascendance = 114051,
+    ElementalOrbit = 383010,
 
    
 }
@@ -138,35 +142,45 @@ local function Opener()
     --flame_shock,if=!ticking
     if not br.Debuffs.up.FlameShock(target) then
         if cast.able.FlameShock() then
-            return cast.FlameShock("target")
+            cast.FlameShock("target")
+            return true
         end
+    end
+
+    --FrostShock if not ticking
+    if cast.able.FrostShock() and not br.Debuffs.up.FrostShock(target) then
+        return cast.FrostShock("target")
     end
 
     --primordial_wave,if=(buff.maelstrom_weapon.stack>=4)&dot.flame_shock.ticking
     if (buffs.stacks.MaelstromWeapon() >= 4) and br.Debuffs.up.FlameShock(target) then
         if cast.able.PrimordialWave() then
-            return cast.PrimordialWave()
+            cast.PrimordialWave()
+            return true
         end
     end
 
     --feral_spirit,if=buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled
     if buffs.up.LegacyofTheFrostWitch() or not player:HasTalent(TalentList.LegacyofTheFrostWitch) then
         if cast.able.FeralSpirit() then
-            return cast.FeralSpirit()
+            cast.FeralSpirit()
+            return true
         end
     end
 
     --doom_winds,if=buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled
     if buffs.up.LegacyofTheFrostWitch() or not player:HasTalent(TalentList.LegacyofTheFrostWitch) then
         if cast.able.DoomWinds() then
-            return cast.DoomWinds()
+            cast.DoomWinds()
+            return true
         end
     end
 
     --primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)
     if (buffs.stacks.MaelstromWeapon() >= 10) and (buffs.up.LegacyofTheFrostWitch() or not player:HasTalent(TalentList.LegacyofTheFrostWitch)) then
         if cast.able.PrimordialStorm() then
-            return cast.PrimordialStorm()
+            cast.PrimordialStorm()
+            return true
         end
     end
 
@@ -179,7 +193,8 @@ local function Opener()
         (player:HasTalent(TalentList.Ascendance) and buffs.up.Ascendance() ) or 
         player:HasTalent(TalentList.DeeplyRootedElements))) then
         if cast.able.ElementalBlast() then
-            return cast.ElementalBlast()
+            cast.ElementalBlast()
+            return true
         end
     end
 
@@ -191,26 +206,21 @@ local function Opener()
         (player:HasTalent(TalentList.Ascendance) and buffs.up.Ascendance() ) or 
         player:HasTalent(TalentList.DeeplyRootedElements))) then
         if cast.able.LightningBolt() then
-            return cast.LightningBolt()
+            cast.LightningBolt()
+            return true
         end
     end
 
     if cast.able.Stormstrike() then
-        return cast.Stormstrike()
+        cast.Stormstrike()
+        return true
     end
 
     if cast.able.LavaLash() then
-        return cast.LavaLash()
+        cast.LavaLash()
+        return true
     end
-
-
-
-
-
-
-
-
-
+    return false
 end
 
 local function Pulse()
@@ -218,17 +228,23 @@ local function Pulse()
         if player:HealthPercent() < 50 and cast.able.HealingSurge() then
             return cast.HealingSurge("player")
         end
-        if not buffs.up.LightningShield("player") and cast.able.LightningShield() then
+        --if we can cast two element shields do the lightning Shield
+        if not buffs.up.LightningShield("player") and player:HasTalent(TalentList.ElementalOrbit) and cast.able.LightningShield() then
             return cast.LightningShield("player")
         end
-        if not buffs.up.Skyfury("player") and cast.able.Skyfury() then
-            return cast.Skyfury("player")   
-        end
-        --if player:EnsureMHWeaponEnchant(SpellList.WindfuryWeapon, AuraList.Windfury) then return true end
-        if player:EnsureMHWeaponEnchant(SpellList.FlameTongueWeapon, AuraList.FlameTongue) then return true end
+
+        --Do the Earthen Shield by default
         if not buffs.up.EarthShield("player") and cast.able.EarthShield() then
             return cast.EarthShield("player")
         end
+
+        if not buffs.up.Skyfury("player") and cast.able.Skyfury() then
+            return cast.Skyfury("player")   
+        end
+
+        if player:EnsureMHWeaponEnchant(SpellList.WindfuryWeapon, AuraList.Windfury) then return true end
+        if player:EnsureOHWeaponEnchant(SpellList.FlameTongueWeapon, AuraList.FlameTongue) then return true end
+        
     end
 
     if player:IsMoving() and not IsSubmerged("player") then
@@ -249,7 +265,7 @@ local function Pulse()
     end
 
     if player.InCombat and not player:ValidTarget("target")   then
-        player:TargetClosestInMeleeRange()
+        player:TargetClosest()
         return
     end
 
@@ -262,22 +278,28 @@ local function Pulse()
     if not UnitCanAttack("player","target") then return end
     target = player:TargetUnit()
     if not target or UnitIsDeadOrGhost("target") then return end
-    meleeRange = target.Distance() <= 7.5
+    meleeRange = target:Distance() <= 7.5
 
     
 
     
      player:EnsureFacing(target)
      player:CloseToMelee(target)
+
+       if target:IsInterruptable() then
+            if cast.able.WindShear() and player.LastCastSpell ~= SpellList.WindShear  then
+                return cast.WindShear("target")    
+            end
+        end
+    if not player:IsAuto() then return player:StartAutoAttack() end
     
     
     if player:CombatTime() < 15 then
-        Opener()
-        return
+        if Opener() then return end
     end
 
 
-    if not player:IsAuto() then return player:StartAutoAttack() end
+    
 
     --	primordial_storm,if=(buff.maelstrom_weapon.stack>=10|buff.primordial_storm.remains<=4&buff.maelstrom_weapon.stack>=5)
     if (buffs.stacks.MaelstromWeapon() >= 10 

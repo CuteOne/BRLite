@@ -8,6 +8,7 @@ br.unlocker="NN"
 nn:Require("/scripts/BRLite/Bootstrap_NN.lua",br,nn)
 nn:Require("/scripts/BRLite/brLogging.lua",br,nn)
 br.Intialization:Startup() --Unlocker and core functionality loaded here.  This is specific to unlocker.
+br.Settings.RootPath = "/scripts/settings"
 br.Framework:Startup()     --The BR Framework.  This will scaffold up the main BR Class with all of the members
 
 

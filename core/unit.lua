@@ -53,6 +53,7 @@ Unit.LastContact = 0
 Unit.IsCreatedByPlayer = false
 Unit.AnimationFlag = 0
 Unit.InteractionPending = false
+Unit.Type = "Unit"
 
 function Unit:new(guid,X,Y,Z)
     ---@type Unit
@@ -84,11 +85,11 @@ function Unit:Freshness()
 end
 
 function Unit:Health()
-    return UnitHealth(self.guid)
+    return br.apis.UnitHealth(self.guid)
 end
 
 function Unit:MaxHealth()
-    return UnitHealthMax(self.guid)
+    return  br.apis.UnitHealthMax(self.guid)
 end
 
 function Unit:TTD()
@@ -120,7 +121,7 @@ function Unit:HealthPercent()
 end
 
 function Unit:IsAlive()
-    return not UnitIsDeadOrGhost(self.WoWGUID)
+    return not UnitIsDeadOrGhost(self.WoWGUID) or self:Health() > 0
 end
 
 function Unit:Classification()
@@ -157,6 +158,26 @@ end
 function Unit:IsInterruptable()
     local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, interrupt = UnitCastingInfo(self.WoWGUID)
     if spell and interrupt then
+        return true
+    end
+    return false
+end
+
+function Unit:IsCasting(spellName)
+    local name, displayName, textureID, startTimeMs, endTimeMs, isTradeskill, castID, notInterruptible, castingSpellID, castBarID = UnitCastingInfo(self.WoWGUID)
+    if spellName and not type(spellName) == "number" then
+        if name and string.lower(name) == string.lower(spellName) then
+            return true
+        end
+        return false
+    end
+    if spellName and type(spellName) == "number" then
+        if castingSpellID and castingSpellID == spellName then
+            return true
+        end
+        return false
+    end
+    if name then
         return true
     end
     return false
@@ -213,7 +234,8 @@ function Unit:IsTargetingPet()
 end
 
 function Unit:Distance()
-    return br.DistanceBetweenObjects(br.ActivePlayer.guid, self.guid)
+    --print ("Calculating distance between " .. tostring(br.ActivePlayer.guid) .. " and " .. tostring(self.guid))
+    return br.DistanceBetweenObjects(br.ActivePlayer.guid, self.guid) or math.huge
 end
 
 function Unit:HasDebuff(auraID)

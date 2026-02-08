@@ -86,7 +86,7 @@ Player.InCombat = false
 Player.CombatStartTime = 0
 Player.NeedsOpener = false
 Player.LastCastSpell = 0
-
+Player.Type="Player"
 
 
 Player.Class = select(3,UnitClass("player"))
@@ -178,22 +178,49 @@ function Player:SetupSpells(SpellList)
 
 
                 target = target or "target"
-                
-                
                 local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellid)
                 local inRange = C_Spell.IsSpellInRange(spellid, target)
-
-
                 ---@type SpellCooldownInfo
-                local spellCooldownInfo = C_Spell.GetSpellCooldown(spellid)
+                local spellCooldownInfo = br.apis.C_Spell.GetSpellCooldown(spellid)
+                ---@type LuaDurationObject
+                local curve = C_CurveUtil.CreateColorCurve()
+                curve:SetType(Enum.LuaCurveType.Linear)
+                curve:AddPoint(0.0, CreateColor(1, 0, 0, 0))
+                --curve:AddPoint(0.3, CreateColor(1, 1, 0, 0.5))
+                curve:AddPoint(1, CreateColor(1, 1, 0, 1))
+                local duration = C_Spell.GetSpellCooldownDuration(spellid)
+                local durColor = duration and duration:EvaluateRemainingDuration(curve)
+                local r,g,b,a = durColor:GetRGBA()
 
-                local castable=
-                  (spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0)
-                    and isUsable 
-                    and (inRange == nil or inRange)
-                    and not insufficientPower
+                local bf = CreateFrame("Frame")
+                local btex = bf:CreateTexture()
+                btex:SetVertexColor(r,g,b,a)
+                btex:SetAllPoints()
+
+                local ctext = btex:GetAlpha()
+                local r2,g2,b2,a2 = btex:GetVertexColor()
+                print("ctext Alpha: " .. tostring(r2) .. " " .. tostring(g2) .. " " .. tostring(b2) .. " " .. tostring(a2))
+
+                 if not isUsable then return false end
                 
-                return castable
+                
+                if spellCooldownInfo.isOnGCD then return false end
+                if insufficientPower then return false end
+                if inRange ~= nil and not inRange then return false end
+                if spellInfo.name == "Blackout Kick" then
+                    print("Duration Color: R: " .. tostring(r) .. " G: " .. tostring(g) .. " B: " .. tostring(b) .. " A: " .. tostring(a))
+                end
+                if g2 == 0 then return true end
+                return false 
+                --if not duration:IsZero() then return false end
+
+                --return true
+                -- local castable=
+                --   (spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0)
+                --     and isUsable 
+                --     and (inRange == nil or inRange)
+                --     and not insufficientPower
+                -- return castable
 
             end
             self.cast.inRange[spell] = function(target)
@@ -374,6 +401,62 @@ function Player:UpdateLocation(X,Y,Z)
     self.LastUpdated = GetTime()
 end
 
+function Player:HasBuff(auraID)
+    return C_UnitAuras.GetPlayerAuraBySpellID(auraID) ~= nil
+end
+
+function Player:CanCastSpell(spellId,target)
+    target = target or "target"
+    local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellId)
+    local inRange
+    inRange = C_Spell.IsSpellInRange(spellId, target)
+    ---@type SpellCooldownInfo
+    local spellCooldownInfo = C_Spell.GetSpellCooldown(spellId)
+    local castable=
+                  (spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0)
+                    and isUsable 
+                    and (inRange == nil or inRange)
+                    and not insufficientPower
+                
+    return castable
+end
+function Player:CastSpellById(spellId, target)
+    if not self:CanCastSpell(spellId,target) then
+        log:LogError("Attempted to cast spell ID: " .. tostring(spellId) .. " which is not castable.")
+        return false
+    end
+    local spellInfo = C_Spell.GetSpellInfo(spellId)
+    if spellInfo then
+        return self:CastSpellByName(spellInfo.name, target)
+    else
+        log:LogError("Attempted to cast unknown spell ID: " .. tostring(spellId))
+        return false
+    end
+end
+
+function Player:CastSpellByName(spellName,target)
+    target = target or "target"
+---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(spellName)
+    if spellInfo == nil then
+        log:LogError("Attempted to cast unknown spell: " .. tostring(spellName))
+        return false
+    end
+
+
+     self.LastCastSpell = spellInfo.spellID
+     log:LogCast(tostring(spellName))
+     if target.Type and target.Type == "Unit" then
+        br.SetFocus(target.guid)
+        CastSpellByName(spellInfo.name,"focus")
+        return true
+     else
+        br.CastSpellByName(spellInfo.name,target)
+        return true--
+     end
+end
+
+
 --#region Talents
 function Player:RefreshTalents()
     
@@ -438,7 +521,7 @@ function Player:TargetRange()
 end
 
 function Player:TargetUnit()
-    local myTarget = br.PlayerTarget()
+    local myTarget = br.UnitTarget("player")
     if not myTarget then return nil end
     return br.ObjectManager.Units[myTarget]
 end
@@ -494,15 +577,18 @@ function Player:AlternatePowerDeficit(powerType)
 end
 
 function Player:Health()
-    return UnitHealth("player")
+    local health = br.apis.UnitHealth("player")
+    local healthstring = string.format("%.4f",health)
+    return healthstring + 0 --force number
+
 end
 function Player:MaxHealth()
-    return UnitHealthMax("player")
+    return br.apis.UnitHealthMax("player")
 end
 function Player:HealthPercent()
-    local health = self:Health()
-    local maxHealth = self:MaxHealth()
-    if maxHealth == 0 then
+    local health = br.apis.UnitHealth("player")
+    local maxHealth = br.apis.UnitHealthMax("player")
+    if health == 0 or maxHealth == 0 then
         return 0
     end
     return (health / maxHealth) * 100
@@ -541,6 +627,9 @@ function Player:IsMounted()
 end
 
 function Player:IsAuto()
+    -- local isAutoAttack = C_Spell.IsCurrentSpell("Auto Attack")
+    -- local isAutoAttackById = C_Spell.IsCurrentSpell(6603)
+    -- print("IsAutoAttack: " .. tostring(isAutoAttack) .. " IsAutoAttackById: " .. tostring(isAutoAttackById))
     return C_Spell.IsCurrentSpell(6603)
 end
 function Player:IsAutoShot()
@@ -673,8 +762,41 @@ function Player:TargetWeakestInMeleeRange()
         log:LogTargetChange(bestTarget)
         br.SetFocus(bestTarget.guid)
         br.TargetUnit("focus")
+    end
+end
+
+
+function Player:TargetClosest()
+
+    --If our current target is friendly clear
+    if not UnitCanAttack("player","target") then
+        br.ClearTarget()
+    end
+
+
+    local bestTarget = nil
+    local bestDistance = math.huge
+    br.ObjectManager:Update()
+    for _,v in pairs(br.ObjectManager.Units) do
+        if v:IsAlive() and
+            not v:IsPlayersControl() and
+            UnitCanAttack("player",v.WoWGUID) and
+            UnitIsEnemy("player",v.WoWGUID) and
+            UnitAffectingCombat(v.WoWGUID)
+        then
+            local distance = v:Distance()
+            if distance < bestDistance then
+                bestDistance = distance
+                bestTarget = v
+            end
+        end
+    end
+    if bestTarget then
+        log:LogTargetChange(bestTarget)
+        br.SetFocus(bestTarget.guid)
+        br.TargetUnit("focus")
     else
-        log:Log("No valid melee target found.")
+        log:Log("No valid target found.")
     end
 end
 
@@ -856,7 +978,7 @@ function Player:InstanceSetPriorityTarget()
     local bestRank = self:InstancePriorityTarget(target)
     local bestTarget = target
     for _,v in pairs(br.ObjectManager.Units) do
-        if v:Distance() <= 10 and not UnitIsDeadOrGhost(v.WoWGUID) then
+        if v:Distance() <= 10 and v:IsAlive() then
             local rank = self:InstancePriorityTarget(v)
             if rank > bestRank then
                 bestRank = rank
@@ -864,15 +986,24 @@ function Player:InstanceSetPriorityTarget()
             end
         end
     end
-
-    if bestTarget and bestTarget.guid ~= target.guid then
+    if not bestTarget then return end
+    if not target:IsAlive() then 
+        br.ClearTarget()
+     end
+    
+    if bestTarget and bestTarget.guid ~= target.guid and bestTarget:IsAlive() then
+        --Handle weird issues where UnitIsDead is delayed
+        if bestTarget:Health() <= 0 then
+            return
+        end
+        log:Log("best target health: " .. tostring(bestTarget:Health()))
+        log:Log("current target health: " .. tostring(target:Health()))
         log:Log("Switching to higher priority target: " .. tostring(bestTarget.name))
         br.SetFocus(bestTarget.guid)
         br.TargetUnit("focus")
     end
 
 end
-
 
 function Player:InstancePriorityTarget(unitToRank)
     --Test to see if we can prioritize targets while inside of instances
@@ -900,6 +1031,37 @@ function Player:InstancePriorityTarget(unitToRank)
         end
     end
     return 0
+end
+
+Player.CounterInterval = math.random(500,1000)/1000
+function Player:HandleCounter(counters,target)
+    target = target or br.ActivePlayer:TargetUnit()
+    local name, _, _, _, endTimeMs, _, _, _, _, _ = UnitCastingInfo(target.WoWGUID)
+    local TTF = (endTimeMs/1000 - GetTime())
+    
+    for _,counter in pairs(counters) do
+        if string.lower(target.name) == string.lower(counter.target) and
+           string.lower(name) == string.lower(counter.spell) and
+           not self:HasBuff(counter.auraIgnore) and
+           TTF < target:TTD() and
+           TTF < self.CounterInterval
+           then 
+                local targetName
+                if counter.spellTarget == "player" then
+                    targetName = "player"
+                else
+                    targetName = target.WoWGUID
+                end
+                if self:CanCastSpell(counter.counter,targetName) then
+                    log:Log("Casting Counter to " .. tostring(counter.spell) .. " on " .. tostring(counter.target))
+                    self:CastSpellById(counter.counter,targetName)
+                    -- once we cast refresh random Counter interval
+                    Player.CounterInterval = math.random(500,1000)/1000
+                    return true
+                end
+        end
+    end
+    return false
 end
 
 

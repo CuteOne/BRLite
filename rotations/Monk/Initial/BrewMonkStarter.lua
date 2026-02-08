@@ -4,12 +4,12 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Brewmaster Monk Starter"
+local RotationName = "Brewmaster Monk Starter 12"
 local RotationShortName = "BrewMonkStarter"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation for Brewmaster Monks. Only valid until level 10."
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
+local RotationTOCLower = 120000
+local RotationTOCUpper = 120000
 local RotationClassName = "MONK"
 local RotationSpecializationID = 5  --Starter Spec ID
 
@@ -32,59 +32,35 @@ end
 --- we need to have them defined per rotation.
 --- ------------------------------------------------
 local SpellList = {
-    ["Tiger Palm"] = 100780,
-    ["Blackout Kick"] = 100784,
-    ["Spinning Crane Kick"] = 101546,
-    ["Leg Sweep"] = 119381,
-    ["Vivify"] = 116670,
-    ["Crackling Jade Lightning"] = 117952,
-    ["Expel Harm"] = 322101,
-    ["Provoke"] = 115546,
-}
-
------------------------------------------------------
---- Toggle Options  
---- Defines the toggle options that will appear
---- in the rotation UI when this rotation is selected
---- ----------------------------------------------------
-local ToggleOptions = {
-    ["RotationMode"] = 
-        {
-            ["values"] = {"On","Off"},
-            ["default"] = "On",
-            ["Icon"] = "Interface\\Icons\\ability_monk_roundhousekick",
-            ["tooltip"] = "Turn the Rotation On or Off",
-        },
-    ["AOEMode"] = {
-            ["values"] = {"On","Off"},
-            ["default"] = "Off",
-            ["Icon"] = "Interface\\Icons\\aability_monk_cranekick",
-            ["tooltip"] = "Turn AOE Mode On or Off",
-        },
+   TigerPalm = 100780,
+   BlackoutKick = 100784,
+    RisingSunKick = 107428,
+    SpinningCraneKick = 322729,
+    ExpelHarm = 322101,
 }
 
 
 
------------------------------------------------------
---- Create Toggles
---- Creates toggle buttons that will appear in the UI
---- When the rotation is active
-------------------------------------------------------
-local function CreateToggles()
-    --No toggles for this basic rotation
-end
+--------------------------------------------------------
+--- Map your functions locally here for ease of use
+--- -----------------------------------------------------
+---@type br.Logging
+local log    = br.Logging
 
------------------------------------------------------
---- Create options
---- Creates options that will appear in the configuration
---- UI when the rotation is selected
-------------------------------------------------------
-local function CreateOptions()
-    --No options for this basic rotation
-end
-
-
+---@type Player
 local player = br.ActivePlayer
+
+---@type Player.cast
+local cast   = br.ActivePlayer.cast
+
+---@type Player.buffs
+local buffs  = br.ActivePlayer.buffs
+
+---@type Unit?
+local target = br.ActivePlayer:TargetUnit()
+
+---@type number
+local energy = br.ActivePlayer:Power()
 
 
 
@@ -96,32 +72,48 @@ local player = br.ActivePlayer
 --- This is where the main rotation logic will go
 --------------------------------------------------------
 local function Pulse()
-    
+    target = br.ActivePlayer:TargetUnit()
+    energy = br.ActivePlayer:Power()
+
     -- Defensive Stuff
     if player:HealthPercent() < 50 then
-        if player:Castable("Expel Harm") then
-            return player:Cast("Expel Harm")
+        if cast.able.ExpelHarm() then
+            return cast.ExpelHarm()
         end
     end
 
-    if player:ValidTarget("target") and not player:IsMounted() then
+    if player:IsBusy() or player:IsMounted() or UnitIsDeadOrGhost("player") then return end
 
-        --range Check, don't count on actual distance, use range by spell
-        if player:SpellInRange("Tiger Palm","target") then
+    if player.InCombat and not player:ValidTarget("target") then
+        player:TargetClosestInMeleeRange()
+    end
 
-            if not player:IsAuto()then
-                print("Starting Auto Attack")
-                return player:StartAutoAttack()
-            end
-            if player:Castable("Tiger Palm") then
-                return player:Cast("Tiger Palm","target")
-            end
-            if player:Castable("Blackout Kick") then
-                return player:Cast("Blackout Kick","target")
-            end
+     if player:IsBusy() or 
+        not player:ValidTarget("target") or
+        not UnitCanAttack("player", "target") then return
+    end
 
-        end
-   end
+     -- pull the active player's target unit locally for ease of use
+    -- if it isn't valid for some reason return
+    target = br.ActivePlayer:TargetUnit()
+    if not target then return end
+
+     if UnitCanAttack("player", "target") then
+        player:EnsureFacing(target)
+        player:CloseToMelee(target)
+    end
+
+    if not player:IsAuto() then player:StartAutoAttack() return end
+    -- if cast.able.TigerPalm() then
+    --     return cast.TigerPalm()
+    -- end
+    if cast.able.BlackoutKick() then
+        return cast.BlackoutKick()
+    end
+
+
+    
+
 end
 
 --------------------------------------------------------
@@ -151,3 +143,5 @@ if rotation then
     rotation.SpellList = SpellList or {}
     rotation.ToggleOptions = ToggleOptions or {}
 end 
+
+print("Rotation " .. RotationName .. " version " .. RotationVersion .. " loaded.")

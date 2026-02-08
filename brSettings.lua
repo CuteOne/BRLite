@@ -22,6 +22,7 @@ local Settings = {}
 br.Settings = Settings
 br.Settings.__index = br.Settings 
 Settings.Loaded = false
+Settings.RootPath = ""
 
 
 function Settings:LoadSettings()
@@ -36,23 +37,6 @@ function Settings:SaveSettings()
     br.WriteFile(self.settingsFullPath, encoded)
 end
 
-function Settings:ResetSettings()
-end
-
-function Settings:LoadDefaultSettings()
-end
-
-function Settings:LoadProfileSettings()
-end
-
-function Settings:SaveProfileSettings()
-end
-
-function Settings:ResetProfileSettings()
-end
-
-function Settings:LoadDefaultProfileSettings()
-end
 
 function Settings:GetSettingToggle(key, default)
     local setting = self:GetSetting(key)
@@ -87,9 +71,14 @@ function Settings:SetProfileSetting()
 end
 
 function Settings:Initialize(path,file)
-    self.settingsLocation = path or "./settings"
+    self.settingsLocation = self.RootPath or "./settings"
     self.settingsFile = file or "brlite_settings.json"
     self.settingsFullPath = self.settingsLocation .. "/" .. self.settingsFile
+
+    path = path or self.settingsLocation
+
+    print("Settings Path: " .. tostring(path))
+    print("Settigns full path: " .. self.settingsFullPath )
 
     if not br.DirectoryExists(path) then
         br.CreateDirectory(path)

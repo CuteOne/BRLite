@@ -2,7 +2,8 @@
 local _,br,_ = ...
 
 ---@type AbstractFramework
-local AF = _G.AbstractFramework
+local AF = br.AF 
+
 
 ---@type br.Settings
 local Settings = br.Settings
@@ -10,8 +11,22 @@ local Settings = br.Settings
 ---@type br.Logging
 local Log = br.Logging
 
+if not AF then
+    Log:LogError("AbstractFramework not found. BRLite cannot initialize.")
+    return
+end
+
+
 ---@class br
 br = br or {}
+
+--TOC Specific changes to AF
+if br.clientTOC < 120000 then
+    AF.SetTooltip = AF.SetTooltips
+end
+
+
+
 
 function br:ToggleToolbar()
     if br.TOOLBAR and br.TOOLBAR:IsShown() then
@@ -40,11 +55,11 @@ function br:InitializeToolbar()
     local savedSettings = br.Settings:GetSetting("TOOLBAR_SETTINGS")
     if not savedSettings then
         savedSettings = {}
-        savedSettings.x = 100
-        savedSettings.y = 100
+        savedSettings.x = 193
+        savedSettings.y = 215
         savedSettings.height = 40
         savedSettings.width = 200
-        savedSettings.point = "TOPLEFT"
+        savedSettings.point = "BOTTOM"
         savedSettings.shown = true
         Settings:SetSetting("TOOLBAR_SETTINGS",savedSettings)
     end
@@ -67,7 +82,7 @@ function br:InitializeToolbar()
     brEnableButton:SetPoint("TOPLEFT",0,0)
     brEnableButton:SetTexture("classicon-" .. strlower(PlayerUtil.GetClassFile()),{34,34},{"CENTER",0,0},true) --inv_10_gearupgrade_flightstone_black
     br:ToggleToolbarColor(brEnableButton,br.pulse)
-    AF.SetTooltips(brEnableButton,"TOPLEFT",-10,0,"Toggle BR Lite Pulse.  Pulse is the main loop that runs the rotation.")
+    AF.SetTooltip(brEnableButton,"TOPLEFT",-10,0,"Toggle BR Lite Pulse.  Pulse is the main loop that runs the rotation.")
     brEnableButton:SetScript("OnClick",function()
         br.pulse = not br.pulse
         br:ToggleToolbarColor(brEnableButton,br.pulse)
@@ -84,7 +99,7 @@ function br:InitializeToolbar()
     tex:SetPoint("CENTER",0,0)  
     tex:SetAllPoints(brEnableFishingInnerFrame)
     br:ToggleToolbarColor(brEnableFishing,br.Fishing.Active)
-    AF.SetTooltips(brEnableFishing,"TOPLEFT",-10,0,"Toggle Auto Fishing.")
+    AF.SetTooltip(brEnableFishing,"TOPLEFT",-10,0,"Toggle Auto Fishing.")
     brEnableFishing:SetScript("OnClick",function()
         br.Fishing.Active = not br.Fishing.Active
         br:ToggleToolbarColor(brEnableFishing,br.Fishing.Active)
@@ -95,7 +110,7 @@ function br:InitializeToolbar()
 
     local brMovement = AF.CreateButton(toolbarFrame,nil,"blue",40,40)
     brMovement:SetPoint("TOPLEFT",80,0)
-    AF.SetTooltips(brMovement,"TOPLEFT",-10,0,"Enable BR Movement calls, like closing to a target.")
+    AF.SetTooltip(brMovement,"TOPLEFT",-10,0,"Enable BR Movement calls, like closing to a target.")
     local brMovementInnerFrame = AF.CreateFrame(brMovement,nil,36,36)
     brMovementInnerFrame:SetPoint("CENTER",0,0)
     local MoveTex = brMovementInnerFrame:CreateTexture(nil,"ARTWORK")
@@ -127,7 +142,7 @@ function br:InitializeToolbar()
 
     local brFacing = AF.CreateButton(toolbarFrame,nil,"blue",40,40)
     brFacing:SetPoint("TOPLEFT",120,0)
-    AF.SetTooltips(brFacing,"TOPLEFT",-10,0,"Enable BR Facing calls, like ensuring you are facing your target.")
+    AF.SetTooltip(brFacing,"TOPLEFT",-10,0,"Enable BR Facing calls, like ensuring you are facing your target.")
     local brFacingInnerFrame = AF.CreateFrame(brFacing,nil,36,36)
     brFacingInnerFrame:SetPoint("CENTER",0,0)
     local FaceTex = brFacingInnerFrame:CreateTexture(nil,"ARTWORK")
@@ -159,7 +174,7 @@ function br:InitializeToolbar()
 
     local brLooting = AF.CreateButton(toolbarFrame,nil,"green",40,40)
     brLooting:SetPoint("TOPLEFT",160,0)
-    AF.SetTooltips(brLooting,"TOPLEFT",-10,0,"Toggle Auto Looting.")
+    AF.SetTooltip(brLooting,"TOPLEFT",-10,0,"Toggle Auto Looting.")
     local brLootingInnerFrame = AF.CreateFrame(brLooting,nil,36,36)
     brLootingInnerFrame:SetPoint("CENTER",0,0)
     local LootTex = brLootingInnerFrame:CreateTexture(nil,"ARTWORK")
@@ -191,7 +206,7 @@ function br:InitializeToolbar()
 
     local PullModeButton = AF.CreateButton(toolbarFrame,nil,"green",40,40)
     PullModeButton:SetPoint("TOPLEFT",200,0)
-    AF.SetTooltips(PullModeButton,"TOPLEFT",-10,0,"Toggle Pull Mode.  In Pull Mode, BR will use your pull rotation.")
+    AF.SetTooltip(PullModeButton,"TOPLEFT",-10,0,"Toggle Pull Mode.  In Pull Mode, BR will use your pull rotation.")
     local PullModeInnerFrame = AF.CreateFrame(PullModeButton,nil,36,36)
     PullModeInnerFrame:SetPoint("CENTER",0,0)
     local PullTex = PullModeInnerFrame:CreateTexture(nil,"ARTWORK")
@@ -222,29 +237,25 @@ function br:InitializeToolbar()
     end)
 
 
-    -- local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
-    -- brDebug:SetPoint("TOPLEFT",200,0)
-    -- AF.SetTooltips(brDebug,"TOPLEFT",-10,0,"Toggle Debug Mode.")
-    -- local brDebugInnerFrame = AF.CreateFrame(brDebug,nil,36,36)
-    -- brDebugInnerFrame:SetPoint("CENTER",0,0)
-    -- local DebugTex = brDebugInnerFrame:CreateTexture(nil,"ARTWORK")
-    -- DebugTex:SetTexture(136243)
-    -- DebugTex:SetSize(30,30)
-    -- DebugTex:SetPoint("CENTER",0,0)
-    -- DebugTex:SetAllPoints(brDebugInnerFrame)
-    -- brDebug:SetScript("OnClick",function()
-    --     ---@type Unit
-    --     local target = br.ActivePlayer:TargetUnit()
-    --     if target then
-    --         Log:Log("Debug Info for target: " .. target.name)
-    --         Log:Log("Unit is Dead or Ghost: " .. tostring(UnitIsDeadOrGhost(target.WoWGUID)))
-    --         Log:Log("Lootable Count: " .. tostring(br.ObjectManager:LootableCount()))
-    --         Log:Log("Skinnable Count: " .. tostring(br.ObjectManager:SkinnableCount()))
-    --         Log:Log("Loot Status: " .. tostring(br.ObjectLootable(target.guid)))
-    --         Log:Log("Is Skinnable: " .. tostring(br.ObjectSkinnable(target.guid)))
-
-    --     end
-    -- end)
+    local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
+    brDebug:SetPoint("TOPLEFT",240,0)
+    AF.SetTooltip(brDebug,"TOPLEFT",-10,0,"Toggle Debug Mode.")
+    local brDebugInnerFrame = AF.CreateFrame(brDebug,nil,36,36)
+    brDebugInnerFrame:SetPoint("CENTER",0,0)
+    local DebugTex = brDebugInnerFrame:CreateTexture(nil,"ARTWORK")
+    DebugTex:SetTexture(136243)
+    DebugTex:SetSize(30,30)
+    DebugTex:SetPoint("CENTER",0,0)
+    DebugTex:SetAllPoints(brDebugInnerFrame)
+    brDebug:SetScript("OnClick",function()
+        print(br.ObjectField("player",0x18,15))
+        for i=0x00,0x2000,8 do
+            local val = br.ObjectField("player",i,8)
+            if val >= 200 and  val <= 292 then
+                print(string.format("Offset 0x%X Value: %s",i,tostring(val)))
+            end
+        end
+    end)
     br.TOOLBAR = toolbarFrame
 end    
 

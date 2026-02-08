@@ -153,34 +153,27 @@ function om:Update()
                     local u = unit:new(v,br.ObjectLocation(v))
                     u.name = br.ObjectOrUnitName(v)
                     u.AnimationFlag = br.ObjectAnimationFlag(v)
+                  
                     self.Bobbers[v] = u
                 end
             else
                 self.Bobbers[v]:UpdateLocation(br.ObjectLocation(v))
                 newFlag = br.ObjectAnimationFlag(v)
-                if self.Bobbers[v].AnimationFlag ~= newFlag and not self.Bobbers[v].InteractionPending then
-                    Log:LogError("Fishing Bobber Sunk")
-                    self.Bobbers[v].InteractionPending = true
-                    local callbackTime = math.random(450,1000)/1000
-                    C_Timer.After(callbackTime, function()
-                        br.ObjectInteract(v)
-                        C_Timer.After(1, function()
-                            br.ConfirmBindOnUse()
+                if self.Bobbers[v].AnimationFlag ~= newFlag and 
+                    not self.Bobbers[v].InteractionPending   then
+                        Log:LogError("Fishing Bobber Sunk")
+                        self.Bobbers[v].InteractionPending = true
+                        local callbackTime = math.random(450,1000)/1000
+                        C_Timer.After(callbackTime, function()
+                            br.ObjectInteract(v)
+                            C_Timer.After(1, function()
+                                br.ConfirmBindOnUse()
+                            end)
                         end)
-                    end)
                 end
             end 
         end
-        if v and br.ObjectOrUnitName(v) == "Glimmerpool" then
-            if not self.FishingHoles[v] then
-                Log:Log("New fishing hole detected: " .. br.ObjectOrUnitName(v))
-                local u = unit:new(v,br.ObjectLocation(v))
-                u.name = br.ObjectOrUnitName(v)
-                self.FishingHoles[v] = u
-            else
-                self.FishingHoles[v]:UpdateLocation(br.ObjectLocation(v))
-            end 
-        end
+        
     end
     
 
@@ -244,7 +237,7 @@ function om:Update()
     for k,_ in pairs(self.Bobbers) do
         local Freshness = self.Bobbers[k]:Freshness()
         --if not updated in last 5 seconds, remove from OM
-        if Freshness > 5 then
+        if Freshness > 1 then
             self.Bobbers[k] = nil
         end
     end

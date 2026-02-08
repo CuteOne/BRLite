@@ -63,6 +63,7 @@ br.PullMode = false
 
 
 -- AF Windows
+br.AF = nil
 br.WINDOW_TOGGLES = {}
 br.TOOLBAR = {}
 
@@ -102,5 +103,13 @@ br.RequireFile = function(path,...) unhandledOverride("RequireFile",path,...) en
 br.GetObjects = function(type) unhandledOverride("ObjectManager",type) end
 br.ObjectType = function(type) unhandledOverride("ObjectType",type) end
 br.AttackTarget = function() unhandledOverride("AttackTarget") end
+
+function br:SecretUnwrap(...)
+    if br.clientTOC >= 200000 then
+        return secretunwrap(...)
+    else
+        return ...
+    end
+end
 
 return br
