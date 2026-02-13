@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter BM TWW"
-local RotationShortName = "StockHunterBMTWW"
+local RotationName = "Stock BM Hunter Midnight"
+local RotationShortName = "StockBMHunterMidnight"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
+local RotationTOCLower = 120000
+local RotationTOCUpper = 120001
 local RotationClassName = "HUNTER"
-local RotationSpecializationID = 1  
+local RotationSpecializationID = 1
 
 
 
@@ -38,13 +38,16 @@ local SpellList = {
    SteadyShot=56641,
    WingClip=195645,
    Disengage=781,
-   KillShot=53351,
+   KillCommand=34026,
+   MendPet =136,
+   BarbedShot = 217200,
 
 }
 
 local AuraList = {
    HuntersMark = 257284,
    WingClip=195645,
+   BarbedShot = 217200,
 }
 
 
@@ -79,7 +82,9 @@ local function Pulse()
     if not player:IsAlive() or player:IsMounted() then return end
 
     if not player:IsBusy() then
-
+        if pet and pet:HealthPercent() < 50 and cast.able.MendPet() then
+            return cast.MendPet()   
+        end
     end
 
     if player.InCombat and UnitIsTapDenied("target") then
@@ -106,19 +111,30 @@ local function Pulse()
     -- In MOP we don't really get an InCombat until we engage
     -- so we're going to check and see if target is attackable
     if UnitCanAttack("player", "target") then
-        if pet and pet:GetTarget() ~= target then
-            br.PetAttack("target")
+        if pet then
+            local petTarget = pet:GetTarget()
+            if not petTarget or petTarget ~= target.guid then
+                if cast.inRange.KillCommand("target") and cast.able.KillCommand("target") then
+                    return cast.KillCommand("target")
+                end
+            end
         end
         player:EnsureFacing(target)
     --   player:CloseToMelee(target)
         
     end
 
-    if target:Distance() >20 and target:Distance() <=40 then
-        if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
-            return cast.HuntersMark()
-        end
-    end
+     if cast.inRange.HuntersMark() then
+         if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
+             return cast.HuntersMark()
+         end
+     end
+     if cast.able.BarbedShot() then
+            if not br.Debuffs.up.BarbedShot(target) then
+                return cast.BarbedShot()
+            end
+     end
+     
 
      --If we're not auto attacking then start
     if cast.inRange.AutoShot() then
@@ -131,17 +147,12 @@ local function Pulse()
         end
     end
 
-    if target:Distance() <= br.api.MeleeDistance and br.Debuffs.up.WingClip(target) then
+    if target:Distance() <= br.api.MeleeDistance and br.Debuffs.up.WingClip(target) and target:IsTargettingPlayer() then
         if cast.able.Disengage() then
             return cast.Disengage()
         end
     end
-    
-    if target:HealthPercent() <= 20 then
-        if cast.able.KillShot() then
-            return cast.KillShot()
-        end
-    end
+
 
     if FocusDeficit >= 40 then
          if cast.able.SteadyShot() then
@@ -152,8 +163,6 @@ local function Pulse()
     if cast.inRange.ArcaneShot() then
         if cast.able.ArcaneShot() then
             return cast.ArcaneShot()
-        else
-            print("Not castable ArcaneShot")
         end
     end
 

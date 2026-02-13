@@ -14,7 +14,7 @@
     "Lua.workspace.library": [
         "~\\.vscode\\extensions\\amstaffix.nilname-lua-api-1.3.0\\lua-definitions",
         "${env:AF_HOME}",
-        "~\\.vscode\\extensions\\ketho.wow-api-0.22.1\\Annotations\\Core"
+        "~\\.vscode\\extensions\\ketho.wow-api-0.22.2\\Annotations\\Core"
     ],
     "Lua.diagnostics.globals": [
         "WorldFrame",
@@ -35,7 +35,16 @@
         "SOUNDKIT",
         "UIParent",
         "GameTooltip",
-        "LootFrame"
+        "LootFrame",
+        "GameTooltip_ClearMoney",
+        "GameTooltip_ClearStatusBars",
+        "GameTooltip_ClearProgressBars",
+        "GameTooltip_ClearWidgetSet",
+        "GameTooltip_HideBattlePetTooltip",
+        "EmbeddedItemTooltip_Hide",
+        "GameTooltip_ClearStatusBarWatch",
+        "TooltipComparisonManager",
+        "ID"
     ],
     "Lua.diagnostics.disable": [
         "assign-type-mismatch"

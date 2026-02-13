@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter BM TWW"
-local RotationShortName = "StockHunterBMTWW"
+local RotationName = "Stock Hunter TWW"
+local RotationShortName = "StockHunterTWW"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
 local RotationTOCLower = 110105
 local RotationTOCUpper = 110105
 local RotationClassName = "HUNTER"
-local RotationSpecializationID = 1  
+local RotationSpecializationID = 5  
 
 
 
@@ -38,7 +38,6 @@ local SpellList = {
    SteadyShot=56641,
    WingClip=195645,
    Disengage=781,
-   KillShot=53351,
 
 }
 
@@ -136,12 +135,7 @@ local function Pulse()
             return cast.Disengage()
         end
     end
-    
-    if target:HealthPercent() <= 20 then
-        if cast.able.KillShot() then
-            return cast.KillShot()
-        end
-    end
+
 
     if FocusDeficit >= 40 then
          if cast.able.SteadyShot() then

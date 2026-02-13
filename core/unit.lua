@@ -84,11 +84,11 @@ function Unit:Freshness()
 end
 
 function Unit:Health()
-    return UnitHealth(self.guid)
+    return br.api.UnitHealth(self.guid)
 end
 
 function Unit:MaxHealth()
-    return UnitHealthMax(self.guid)
+    return br.api.UnitHealthMax(self.guid)
 end
 
 function Unit:TTD()

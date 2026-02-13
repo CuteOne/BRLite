@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter BM TWW"
-local RotationShortName = "StockHunterBMTWW"
+local RotationName = "Stock Druid Tank TBC Classic"
+local RotationShortName = "StockDruidTank2.5.5"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
-local RotationClassName = "HUNTER"
-local RotationSpecializationID = 1  
+local RotationTOCLower = 20505
+local RotationTOCUpper = 20505
+local RotationClassName = "DRUID"
+local RotationSpecializationID = 3  --Starter Spec ID
 
 
 
@@ -32,19 +32,26 @@ end
 --- we need to have them defined per rotation.
 --- ------------------------------------------------
 local SpellList = {
-    AutoShot = 75,
-   HuntersMark = 257284,
-   ArcaneShot=185358,
-   SteadyShot=56641,
-   WingClip=195645,
-   Disengage=781,
-   KillShot=53351,
-
+    MarkOfTheWild = 1126,
+    MarkOfTheWild2 = 5232,
+    Thorns=467,
+    Moonfire = 8921,
+    HealingTouch = 5185,
+    Rejuvenation = 774,
+    Rejuvenation2 = 1058,
+    EntanglingRoots = 339,
+    Wrath = 5176,
 }
 
 local AuraList = {
-   HuntersMark = 257284,
-   WingClip=195645,
+    MarkOfTheWild = 1126,
+    MarkOfTheWild2 = 5232,
+    Thorns=467,
+    Moonfire = 8921,
+    HealingTouch = 5185,    
+    Rejuvenation = 774,
+    Rejuvenation2 = 1058,
+    EntanglingRoots = 339,
 }
 
 
@@ -58,11 +65,8 @@ local cast = br.ActivePlayer.cast
 local buffs = br.ActivePlayer.buffs
 ---@type Unit?
 local target = br.ActivePlayer:TargetUnit()
----@type Unit?
-local pet = br.ActivePlayer:Pet()
   
-local Focus = 0
-local FocusDeficit = 0
+local Mana
 
 --------------------------------------------------------
 --- Pulse
@@ -72,14 +76,25 @@ local FocusDeficit = 0
 --------------------------------------------------------
 local function Pulse()
 
-    Focus = player:Power()
-    FocusDeficit = player:PowerDeficit()
-    pet = br.ActivePlayer:Pet()
+    Mana = player:PowerPercent()
 
     if not player:IsAlive() or player:IsMounted() then return end
 
     if not player:IsBusy() then
-
+        -- perm buffs
+        if cast.able.MarkOfTheWild2() then
+            if not buffs.up.MarkOfTheWild2() then
+                return cast.MarkOfTheWild2("player")
+            end
+        end
+        if not buffs.up.Thorns() and cast.able.Thorns() then
+            return cast.Thorns("player")
+        end
+        if not player.InCombat and player:HealthPercent() < 70 and Mana >= 60 then
+            if cast.able.HealingTouch() then
+                return cast.HealingTouch("player")
+             end
+        end
     end
 
     if player.InCombat and UnitIsTapDenied("target") then
@@ -106,56 +121,44 @@ local function Pulse()
     -- In MOP we don't really get an InCombat until we engage
     -- so we're going to check and see if target is attackable
     if UnitCanAttack("player", "target") then
-        if pet and pet:GetTarget() ~= target then
-            br.PetAttack("target")
-        end
         player:EnsureFacing(target)
-    --   player:CloseToMelee(target)
+        player:CloseToMelee(target)
         
     end
 
-    if target:Distance() >20 and target:Distance() <=40 then
-        if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
-            return cast.HuntersMark()
+    --If we're not auto attacking then start
+    if not player:IsAuto() then return player:StartAutoAttack() end
+
+    --Defensive items while in combat
+    if player:HealthPercent() < 80 then
+        if cast.able.Rejuvenation2() and not buffs.up.Rejuvenation2() then
+            return cast.Rejuvenation2("player")
         end
+        
     end
 
-     --If we're not auto attacking then start
-    if cast.inRange.AutoShot() then
-       if not br.api.IsAutoShot() then return br.api.StartAutoShot() end
+    if target:Distance() <= 30 and 
+        Mana >= 80 and
+        not br.Debuffs.up.Moonfire(target) and cast.able.Moonfire() and player.LastCastSpell ~= SpellList.Moonfire then
+        return cast.Moonfire("target")
     end
 
-    if cast.inRange.WingClip() then
-        if not br.Debuffs.up.WingClip(target) and cast.able.WingClip() then
-            return cast.WingClip()
-        end
-    end
+    --Regular rotation stuff
 
-    if target:Distance() <= br.api.MeleeDistance and br.Debuffs.up.WingClip(target) then
-        if cast.able.Disengage() then
-            return cast.Disengage()
-        end
+    if UnitCreatureType("target") == "Humanoid" and 
+    target:Distance() <= 10 and  
+    not br.Debuffs.up.EntanglingRoots(target) and
+    target:HealthPercent() <= 30 and
+    cast.able.EntanglingRoots() then
+        return cast.EntanglingRoots("target")
     end
     
-    if target:HealthPercent() <= 20 then
-        if cast.able.KillShot() then
-            return cast.KillShot()
-        end
+    if br.Debuffs.up.EntanglingRoots(target) and target:Distance() <= 10 and
+    cast.able.Wrath() then
+        return cast.Wrath("target")
     end
 
-    if FocusDeficit >= 40 then
-         if cast.able.SteadyShot() then
-            return cast.SteadyShot()
-        end
-    end
-
-    if cast.inRange.ArcaneShot() then
-        if cast.able.ArcaneShot() then
-            return cast.ArcaneShot()
-        else
-            print("Not castable ArcaneShot")
-        end
-    end
+    
 
 end
 

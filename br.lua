@@ -55,11 +55,13 @@ br.Rotations = {}
 br.RotationCount = 0
 br.ActiveRotation={}
 br.Geometry = {}
+br.api = {}
 br.Fishing = nil
 br.Looting = nil
 br.Skinning = nil
 br.Gathering = nil
 br.PullMode = false
+br.Debug=false
 
 
 -- AF Windows

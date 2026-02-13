@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter BM TWW"
-local RotationShortName = "StockHunterBMTWW"
+local RotationName = "Stock Hunter Midnight"
+local RotationShortName = "StockHunterMidnight"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
+local RotationTOCLower = 120000
+local RotationTOCUpper = 120001
 local RotationClassName = "HUNTER"
-local RotationSpecializationID = 1  
+local RotationSpecializationID = 5  
 
 
 
@@ -38,7 +38,6 @@ local SpellList = {
    SteadyShot=56641,
    WingClip=195645,
    Disengage=781,
-   KillShot=53351,
 
 }
 
@@ -114,34 +113,29 @@ local function Pulse()
         
     end
 
-    if target:Distance() >20 and target:Distance() <=40 then
-        if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
-            return cast.HuntersMark()
-        end
-    end
+    -- if target:Distance() >20 and target:Distance() <=40 then
+    --     if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
+    --         return cast.HuntersMark()
+    --     end
+    -- end
 
      --If we're not auto attacking then start
     if cast.inRange.AutoShot() then
        if not br.api.IsAutoShot() then return br.api.StartAutoShot() end
     end
 
-    if cast.inRange.WingClip() then
-        if not br.Debuffs.up.WingClip(target) and cast.able.WingClip() then
-            return cast.WingClip()
-        end
-    end
+    -- if cast.inRange.WingClip() then
+    --     if not br.Debuffs.up.WingClip(target) and cast.able.WingClip() then
+    --         return cast.WingClip()
+    --     end
+    -- end
 
     if target:Distance() <= br.api.MeleeDistance and br.Debuffs.up.WingClip(target) then
         if cast.able.Disengage() then
             return cast.Disengage()
         end
     end
-    
-    if target:HealthPercent() <= 20 then
-        if cast.able.KillShot() then
-            return cast.KillShot()
-        end
-    end
+
 
     if FocusDeficit >= 40 then
          if cast.able.SteadyShot() then
@@ -152,8 +146,6 @@ local function Pulse()
     if cast.inRange.ArcaneShot() then
         if cast.able.ArcaneShot() then
             return cast.ArcaneShot()
-        else
-            print("Not castable ArcaneShot")
         end
     end
 

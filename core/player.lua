@@ -86,15 +86,20 @@ Player.InCombat = false
 Player.CombatStartTime = 0
 Player.NeedsOpener = false
 Player.LastCastSpell = 0
+Player.IsLooting = false
 
 
 
 Player.Class = select(3,UnitClass("player"))
 Player.ClassName = select(2,UnitClass("player"))
 --TODO Check version compat with spec stuff
-Player.Specialization =  GetSpecialization()
+
+
 Player.name = UnitName("player")
-Player.SpecializationName = select(2,GetSpecializationInfo(Player.Specialization))
+
+Player.Specialization =  br.api.GetSpecialization()
+--Player.SpecializationName = select(2,GetSpecializationInfo(Player.Specialization))
+Player.SpecializationName = br.api.GetSpecializationName()
 
 --#region Spellbook/Cast
         ---@class Player.cast
@@ -125,6 +130,7 @@ function Player:SetupSpells(SpellList)
         self.cast.last = function() return self.LastCastSpell end
         self.cast.atTargetGround = {}
         self.cast.charges = {}
+         self.cast.lowestRank = {}
 
         for spell,id in pairs(SpellList) do
            ---Returns the primary power cost of the spell
@@ -138,61 +144,14 @@ function Player:SetupSpells(SpellList)
             ---@param target any
             ---@return boolean?
             self.cast.able[spell] = function(target,spellid)
-
                 spellid = spellid or id
-
-                --always return false if casting or channeling
-                local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, castID, notInterruptible, spellId = UnitCastingInfo("player")
-                if name ~= nil then return false end
-                local name, _, _, _, _, _, _, spellId = UnitChannelInfo("player");
-                if name ~= nil then return false end
-
-                local isSpellKnown = false
-                 if  C_SpellBook.IsSpellInSpellBook then
-                    isSpellKnown = C_SpellBook.IsSpellInSpellBook(spellid,Enum.SpellBookSpellBank.Player,true)
-                elseif C_SpellBook.IsSpellKnownOrInSpellBook then
-                    isSpellKnown =C_SpellBook.IsSpellKnownOrInSpellBook(spellid,Enum.SpellBookSpellBank.Player,true)
-                elseif IsSpellKnownOrOverridesKnown then
-                    isSpellKnown =IsSpellKnownOrOverridesKnown(spellid,false)     
-                else
-                    log:LogError("No method to determine if spell is known.")                    
-                end
-                if not isSpellKnown then
-                    --log:LogError("Spell " .. tostring(spellid) .. " is not known.")
-                    return false
-                end
-
-                --return false if moving and we're not casting an instant
-                local isMoving = GetUnitSpeed("player") > 0
-                ---@type SpellInfo
-                local spellInfo = C_Spell.GetSpellInfo(spellid)
-                local isInstant = (spellInfo and spellInfo.castTime and spellInfo.castTime == 0)
-                if not isInstant and isMoving then
-                    return false
-                end
-                                
+                
                 --if gcdRemains and we're not casting an instant then return false
-                if self.cast.gcdRemains() > 0 and not isInstant then 
+                if self.cast.gcdRemains() > 0  then 
                     return false
                 end
-
-
                 target = target or "target"
-                
-                
-                local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellid)
-                local inRange = C_Spell.IsSpellInRange(spellid, target)
-
-
-                ---@type SpellCooldownInfo
-                local spellCooldownInfo = C_Spell.GetSpellCooldown(spellid)
-
-                local castable=
-                  (spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0)
-                    and isUsable 
-                    and (inRange == nil or inRange)
-                    and not insufficientPower
-                
+                local castable = br.api.IsSpellCastable(spellid,target)
                 return castable
 
             end
@@ -210,6 +169,15 @@ function Player:SetupSpells(SpellList)
                 local spellInfo = C_Spell.GetSpellInfo(id)
                 self.LastCastSpell = id
                 return br.CastSpellByName(spellInfo.name,target)
+            end
+
+            self.cast.lowestRank[spell] = function(target)
+                target = target or "target"
+                local lowestRankName = br.api.GetLowestRankedSpell(id)
+                log:LogCast(tostring(lowestRankName))
+                self.cast.last = id
+                Player.LastCastSpell = id
+                return br.CastSpellByName(lowestRankName,target)
             end
 
             self.cast.secondary[spell] = function(target)
@@ -270,12 +238,12 @@ function Player:SetupSpells(SpellList)
             end
 
             self.cast.gcdRemains = function()
-                ---@type SpellCooldownInfo
-                local gcdInfo = C_Spell.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
-                if gcdInfo.startTime == 0 or gcdInfo.duration == 0 then
+               
+                local gcdStart, gcdDuration, _ = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
+                if gcdStart == 0 or gcdDuration == 0 then
                     return 0
                 else
-                    local remaining = (gcdInfo.startTime + gcdInfo.duration) - GetTime()
+                    local remaining = (gcdStart + gcdDuration) - GetTime()
                     if remaining < 0 then
                         return 0
                     else
@@ -285,9 +253,8 @@ function Player:SetupSpells(SpellList)
             end
 
             self.cast.gcdMax = function()
-                ---@type SpellCooldownInfo
-                local gcdInfo = C_Spell.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
-                return gcdInfo.duration
+                local _, gcdDuration, _ = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
+                return gcdDuration
             end
             self.cast.charges[spell] = function()
                 ---@type SpellInfo
@@ -320,10 +287,12 @@ function Player:BuffSetup(AuraList)
     self.buffs.remaining={}
     for auraName,auraID in pairs(AuraList) do
         self.buffs.up[auraName] = function()
-            return C_UnitAuras.GetPlayerAuraBySpellID(auraID) ~= nil
+
+
+            return br.api.GetPlayerAuraBySpellID(auraID) ~= nil
         end
         self.buffs.down[auraName] = function()
-            return C_UnitAuras.GetPlayerAuraBySpellID(auraID) == nil
+            return br.api.GetPlayerAuraBySpellID(auraID) == nil
         end
         self.buffs.stacks[auraName] = function()
 
@@ -331,7 +300,7 @@ function Player:BuffSetup(AuraList)
             local spellInfo = C_Spell.GetSpellInfo(auraID)
             if spellInfo == nil then return 0 end
 
-            local name, spellId, stacks, _, _ = AuraUtil.FindAuraByName(spellInfo.name,"player","HELPFUL")
+            local name, spellId, stacks, _, _ = br.api.FindAuraByName(spellInfo.name,"player","HELPFUL")
             if name == nil then
                 return 0
             else
@@ -341,7 +310,7 @@ function Player:BuffSetup(AuraList)
 
         self.buffs.remaining[auraName] = function()
             ---@type AuraData|nil
-            local auraData = C_UnitAuras.GetPlayerAuraBySpellID(auraID)
+            local auraData = br.api.GetPlayerAuraBySpellID(auraID)
             if auraData and auraData.expirationTime then
                 local remaining = auraData.expirationTime - GetTime()
                 if remaining < 0 then
@@ -458,11 +427,11 @@ function Player:PowerType()
 end
 
 function Player:Power()
-    return UnitPower("player",self:PowerType())
+    return br.api.UnitPower("player",self:PowerType())
 end
 
 function Player:MaxPower()
-    return UnitPowerMax("player",self:PowerType())
+    return br.api.UnitPowerMax("player",self:PowerType())
 end
 function Player:PowerPercent()
     local power = self:Power()
@@ -494,10 +463,10 @@ function Player:AlternatePowerDeficit(powerType)
 end
 
 function Player:Health()
-    return UnitHealth("player")
+    return br.api.UnitHealth("player")
 end
 function Player:MaxHealth()
-    return UnitHealthMax("player")
+    return br.api.UnitHealthMax("player")
 end
 function Player:HealthPercent()
     local health = self:Health()
@@ -544,7 +513,11 @@ function Player:IsAuto()
     return C_Spell.IsCurrentSpell(6603)
 end
 function Player:IsAutoShot()
-    return C_Spell.IsCurrentSpell(75)
+    local isAS = C_Spell.IsCurrentSpell(75)
+    local isAS2 = C_Spell.IsCurrentSpell(193455) --Rapid Fire
+    local isAS3 = C_Spell.IsCurrentSpell(257284) --Sidewinders
+    print("IsAutoShot: " .. tostring(isAS))
+    return isAS
 end
 
 function Player:IsCasting()
@@ -560,6 +533,7 @@ end
 function Player:IsBusy()
     return self:IsCasting() or self:IsChanneling() or
     HasVehicleActionBar() == true or HasOverrideActionBar() == true
+    or self.IsLooting == true
 end
 
 function Player:StartAutoAttack()
@@ -568,10 +542,9 @@ function Player:StartAutoAttack()
     end
 end
 function Player:StartAutoShot()
-    if not self:IsAutoShot() then
-        log:Log("Starting Auto Shot")
-        br.CastSpellByID(75)
-    end
+   
+        br.CastSpellByName("! Auto Shot")
+
 end
 
 function Player:IsSpellKnown(spellId)

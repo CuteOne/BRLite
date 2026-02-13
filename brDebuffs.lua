@@ -19,8 +19,8 @@ function auras:AuraSetup(AuraList)
        
         self.auras.up[auraName] = function(unit)
             for i=1,40 do
-                ---@type AuraData?
-                local aura = C_UnitAuras.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
+                ---@type AuraData
+                local aura = br.api.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
                 if aura and aura.spellId == auraID then
                     return true
                 end
@@ -35,7 +35,7 @@ function auras:AuraSetup(AuraList)
         self.auras.stacks[auraName] = function(unit)
            for i=1,40 do
                 ---@type AuraData?
-                local aura = C_UnitAuras.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
+                local aura = br.api.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
                 if aura and aura.spellId == auraID then
                     return aura.charges or 0
                 end
@@ -46,7 +46,7 @@ function auras:AuraSetup(AuraList)
         self.auras.remaining[auraName] = function(unit)
         for i=1,40 do
                 ---@type AuraData?
-                local aura = C_UnitAuras.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
+                local aura = br.api.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
                 if aura and aura.spellId == auraID then
                     return aura.expirationTime - GetTime()
                 end

@@ -1,0 +1,136 @@
+---@type _,br,_
+local _,br,_ = ...
+
+---@type AbstractFramework
+local AF = _G.AbstractFramework
+
+---@type br.Settings
+local Settings = br.Settings
+
+---@type br.Logging
+local Log = br.Logging
+
+---@class br
+br = br or {}
+
+if br.clientTOC ~= 110105 then return end
+
+if not br.Version then
+    print("Core object not located, cannot continue.")
+    return
+end
+
+br.api.GetSpecialization = function()
+    return GetSpecialization()
+end
+
+br.api.GetSpecializationName = function()
+   return select(2,GetSpecializationInfo(Player.Specialization))
+end
+--Older version of abstract framework has a different tooltip function
+--so we need to stub it in.  FYI AF version r12 is the version
+--used for 11.1.5 
+_G.AbstractFramework.SetTooltip = _G.AbstractFramework.SetTooltips
+br.api.GetSpellCooldown = function(spellID)
+    ---@type SpellCooldownInfo
+    local scdInfo = C_Spell.GetSpellCooldown(spellID)
+    return scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled
+    
+end
+
+br.api.IsSpellCurrent = function(spellID)
+    return C_Spell.IsCurrentSpell(spellID)
+end
+
+
+br.api.GetLowestRankedSpell = function(spellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(spellId)
+    local lowestRank = math.huge
+    local lowestRankIndex = nil
+    local lowestBookType = nil
+    for tab = 1, GetNumSpellTabs() do
+        local _, _, offset, numSpells = GetSpellTabInfo(tab)
+        for index = offset + 1, offset + numSpells do
+            local spellName, spellRank = GetSpellBookItemName(index, BOOKTYPE_SPELL)
+            if spellName == spellInfo.name then
+                local rankNumber = tonumber(spellRank:match("(%d+)"))
+                if rankNumber and rankNumber < lowestRank then
+                    lowestRank = rankNumber
+                    lowestRankIndex = index
+                    lowestBookType = BOOKTYPE_SPELL
+                end
+            end
+        end
+    end
+    return GetSpellBookItemName(lowestRankIndex, lowestBookType)
+end
+
+br.api.IsSpellCastable = function(SpellId,target)
+    target = target or "target"
+    if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
+    if not br.api.IsSpellKnown(SpellId) then return false end
+
+    local startTime, duration, enabled = br.api.GetSpellCooldown(SpellId)
+    local isUsable, notEnoughPower = C_Spell.IsSpellUsable(SpellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
+    local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
+    
+    return  enabled and (startTime == 0 or duration == 0) and 
+        isUsable and (inRange == nil or inRange) and 
+        not notEnoughPower and not isActiveOrQueued
+end
+
+br.api.IsSpellKnown = function(SpellId)
+    return IsSpellKnown(SpellId)
+end
+
+br.api.AutoShotOn = false
+br.api.AutoShotStarted = GetTime()
+
+br.api.IsAutoShot = function()
+    if  br.api.AutoShotOn and (GetTime() - br.api.AutoShotStarted) < 2.5 then
+        return true
+     end
+    local ias = C_Spell.IsCurrentSpell(75)
+    if ias then
+        br.api.AutoShotOn = true
+        br.api.AutoShotStarted = GetTime()
+    end
+    return ias
+end
+br.api.StartAutoShot = function()
+    if not br.api.IsAutoShot() then
+        br.api.AutoShotStarted = GetTime()
+        br.api.AutoShotOn = true
+        br.CastSpellByID(75)
+    end
+end
+
+
+br.api.InteractDistance = 5
+br.api.MeleeDistance = 8.5
+
+br.api.UnitHealth = function(...)
+    return UnitHealth(...)
+end
+
+br.api.UnitHealthMax = function(...)
+    return UnitHealthMax(...)
+end
+
+br.api.UnitPower = function(...)
+    return UnitPower(...)
+end
+
+br.api.UnitPowerMax = function(...)
+    return UnitPowerMax(...)
+end
+
+br.api.GetAuraDataByIndex = function(...) return C_UnitAuras.GetAuraDataByIndex(...) end
+br.api.GetPlayerAuraBySpellID = function(...) return C_UnitAuras.GetPlayerAuraBySpellID(...) end
+br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end   
+
+Log:Log("Initializing TWW 11.1.5 api")

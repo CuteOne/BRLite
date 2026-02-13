@@ -1,6 +1,9 @@
 ---@type _, br, NilName
 local _, br, nn = ...
 
+---@class br
+br = br or {}
+
 ---@type br.Logging
 br.Logging = br.Logging or {}
 
@@ -89,7 +92,7 @@ br.PetFollow                =  function() return nn.Unlock("PetFollow") end
 br.PetPassiveMode           =  function() return nn.Unlock("PetPassiveMode") end
 br.PetStopAttack            =  function() return nn.Unlock("PetStopAttack") end
 br.PetWait                  =  function() return nn.Unlock("PetWait") end
-br.RunMacroText             =  function(...) return nn.Unlock("RunMacroText",...) end
+--br.RunMacroText             =  function(...) return nn.Unlock("RunMacroText",...) end
 br.RunMacro                 =  function(...) return nn.Unlock("RunMacro",...) end
 br.StartAttack              =  function(...) return nn.Unlock("StartAttack",...) end
 br.SpellStopCasting         =  function() return nn.Unlock("SpellStopCasting") end
@@ -101,4 +104,8 @@ br.TargetNearestEnemy       =  function(...) return nn.Unlock("TargetNearestEnem
 br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
 br.FollowUnit               = function(...) return nn.Unlock("FollowUnit",...) end
 br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
+
+br.unwrap = function(...)
+    return secretunwrap(...)
+end
 br.Logging:Log("nn Unlocker Loaded");

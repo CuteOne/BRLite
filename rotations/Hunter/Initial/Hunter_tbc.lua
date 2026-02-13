@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter BM TWW"
-local RotationShortName = "StockHunterBMTWW"
+local RotationName = "Stock Hunter TBC"
+local RotationShortName = "StockHunterTBC"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
+local RotationTOCLower = 20505
+local RotationTOCUpper = 20505
 local RotationClassName = "HUNTER"
-local RotationSpecializationID = 1  
+local RotationSpecializationID = 3  --Starter Spec ID
 
 
 
@@ -33,18 +33,17 @@ end
 --- ------------------------------------------------
 local SpellList = {
     AutoShot = 75,
-   HuntersMark = 257284,
-   ArcaneShot=185358,
-   SteadyShot=56641,
-   WingClip=195645,
-   Disengage=781,
-   KillShot=53351,
-
+   RaptorStrike = 2973,
+   AspectOfTheMonkey = 13163,
+   SerpentSting = 1978,
+   HuntersMark = 1130,
+   ArcaneShot=3044
 }
 
 local AuraList = {
-   HuntersMark = 257284,
-   WingClip=195645,
+   AspectOfTheMonkey = 13163,
+   SerpentSting = 1978,
+   HuntersMark = 1130,
 }
 
 
@@ -58,11 +57,8 @@ local cast = br.ActivePlayer.cast
 local buffs = br.ActivePlayer.buffs
 ---@type Unit?
 local target = br.ActivePlayer:TargetUnit()
----@type Unit?
-local pet = br.ActivePlayer:Pet()
   
-local Focus = 0
-local FocusDeficit = 0
+local Mana
 
 --------------------------------------------------------
 --- Pulse
@@ -72,14 +68,14 @@ local FocusDeficit = 0
 --------------------------------------------------------
 local function Pulse()
 
-    Focus = player:Power()
-    FocusDeficit = player:PowerDeficit()
-    pet = br.ActivePlayer:Pet()
+    Mana = player:PowerPercent()
 
     if not player:IsAlive() or player:IsMounted() then return end
 
     if not player:IsBusy() then
-
+        if not buffs.up.AspectOfTheMonkey() and cast.able.AspectOfTheMonkey() then
+            return cast.AspectOfTheMonkey("player")
+        end
     end
 
     if player.InCombat and UnitIsTapDenied("target") then
@@ -106,9 +102,6 @@ local function Pulse()
     -- In MOP we don't really get an InCombat until we engage
     -- so we're going to check and see if target is attackable
     if UnitCanAttack("player", "target") then
-        if pet and pet:GetTarget() ~= target then
-            br.PetAttack("target")
-        end
         player:EnsureFacing(target)
     --   player:CloseToMelee(target)
         
@@ -123,39 +116,46 @@ local function Pulse()
      --If we're not auto attacking then start
     if cast.inRange.AutoShot() then
        if not br.api.IsAutoShot() then return br.api.StartAutoShot() end
-    end
+        end
 
-    if cast.inRange.WingClip() then
-        if not br.Debuffs.up.WingClip(target) and cast.able.WingClip() then
-            return cast.WingClip()
-        end
-    end
 
-    if target:Distance() <= br.api.MeleeDistance and br.Debuffs.up.WingClip(target) then
-        if cast.able.Disengage() then
-            return cast.Disengage()
-        end
-    end
-    
-    if target:HealthPercent() <= 20 then
-        if cast.able.KillShot() then
-            return cast.KillShot()
-        end
-    end
-
-    if FocusDeficit >= 40 then
-         if cast.able.SteadyShot() then
-            return cast.SteadyShot()
-        end
+    if cast.inRange.SerpentSting() then
+        if not br.Debuffs.up.SerpentSting(target) and cast.able.SerpentSting() then
+            return cast.SerpentSting()
+       end
     end
 
     if cast.inRange.ArcaneShot() then
         if cast.able.ArcaneShot() then
             return cast.ArcaneShot()
-        else
-            print("Not castable ArcaneShot")
         end
     end
+
+   
+    if target:Distance() <= br.api.MeleeDistance then
+        if not player:IsAuto() then return player:StartAutoAttack() end
+    end
+    --br.StartAttack(target.WoWGUID)
+
+    --Defensive items while in combat
+    if player:HealthPercent() < 80 then
+   
+    end
+
+    if target:Distance() <= br.api.MeleeDistance then
+        if cast.able.RaptorStrike() then
+            return cast.lowestRank.RaptorStrike("target")
+        end
+    end
+
+
+
+
+    --Regular rotation stuff
+
+    
+
+    
 
 end
 

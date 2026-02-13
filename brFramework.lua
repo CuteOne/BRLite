@@ -9,6 +9,7 @@ local Log,Settings = br.Logging,br.Settings
 local Framework = br.Framework 
 
 function br.Framework:RotationPulse()
+    br.Looting:Loot()
     if br.pulse and br.ActiveRotation then
         br.ActiveRotation:Pulse()
     end

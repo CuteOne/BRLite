@@ -94,8 +94,16 @@ function cm:Initialize()
     self.InCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     self.InCombatFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
     self.InCombatFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    self.InCombatFrame:RegisterEvent("LOOT_OPENED")
+    self.InCombatFrame:RegisterEvent("LOOT_CLOSED")
 
     self.InCombatFrame:SetScript("OnEvent", function(self, event, ...)
+        if event == "LOOT_OPENED" then
+            br.ActivePlayer.IsLooting = true
+        end
+        if event == "LOOT_CLOSED" then
+            br.ActivePlayer.IsLooting = false
+        end
         if event == "UNIT_SPELLCAST_FAILED" then
             local unitID, spellName, _, _, spellID = ...
             if unitID == "player" and spellID ~= nil then
@@ -119,13 +127,6 @@ function cm:Initialize()
             Log:Log("Player exited combat.")
             br.ActivePlayer.InCombat = false
             br.ActivePlayer.NeedsOpener = false
-            C_Timer.After(1.2, function()
-                if br.DoLooting and br.ObjectManager:LootableCount() > 0 then
-                    br.Looting:Loot()
-                else
-                    Log:Log("No lootable corpses found after 1.2 seconds.")
-                end
-            end)
         end
     end)
         
