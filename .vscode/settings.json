@@ -1,6 +1,6 @@
 {
     "Lua.runtime.version": "Lua 5.1",
-    "Lua.runtime.builtin": {
+        "Lua.runtime.builtin": {
         "basic": "disable",
         "debug": "disable",
         "io": "disable",
@@ -48,6 +48,6 @@
         "ID"
     ],
     "Lua.diagnostics.disable": [
-        "assign-type-mismatch"
+        "assign-type-mismatch","duplicate-doc-field","duplicate-set-field"
     ]
 }
