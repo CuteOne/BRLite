@@ -71,7 +71,13 @@ function Geometry:GetFacing(Unit1,Unit2,Degrees)
 end
 
 function Geometry:GetAnglesBetweenObjects(Unit1,Unit2)
-	if Unit1 and Unit2 then
+	if Unit1 and br.ObjectExists(Unit1.guid) and Unit2 and br.ObjectExists(Unit2.guid) then
+
+		if br.unlocker == "DMC" then
+			return br.GetAngleBetweenPositions(Unit1.guid, Unit2.guid)
+		end
+
+
 		local X1, Y1, Z1 = br.ObjectLocation(Unit1.guid)
 		local X2, Y2, Z2 = br.ObjectLocation(Unit2.guid)
 		return math.atan2(Y2 - Y1, X2 - X1) % (math.pi * 2),

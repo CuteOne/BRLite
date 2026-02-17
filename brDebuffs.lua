@@ -19,9 +19,11 @@ function auras:AuraSetup(AuraList)
        
         self.auras.up[auraName] = function(unit)
             for i=1,40 do
+                if not br.ObjectExists(unit.guid) then return false end
                 ---@type AuraData
                 local aura = br.api.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
                 if aura and aura.spellId == auraID then
+                    --print("Unit ", unit.name, " has debuff ", auraName, " with ", aura.charges or 0, " stacks and ", math.max(0,aura.expirationTime - GetTime()), " seconds remaining.")
                     return true
                 end
             end

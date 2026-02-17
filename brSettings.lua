@@ -18,7 +18,7 @@ local Log = br.Logging or {}
 ---@field LoadSettings function  #Load settings from file
 ---@field SaveSettings function  #Save settings to file
 ---@field Initialize fun(self:br.Settings,path:string,file:string)  #Initialize settings system
-local Settings = {}
+local Settings = br.Settings or {}
 br.Settings = Settings
 br.Settings.__index = br.Settings 
 Settings.Loaded = false
@@ -90,7 +90,8 @@ function Settings:Initialize(path,file)
     self.settingsLocation = path or "./settings"
     self.settingsFile = file or "brlite_settings.json"
     self.settingsFullPath = self.settingsLocation .. "/" .. self.settingsFile
-
+    print("Settings full path: " .. tostring(self.settingsFullPath))
+     --Ensure directory and file exist
     if not br.DirectoryExists(path) then
         br.CreateDirectory(path)
     end

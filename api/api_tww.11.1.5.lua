@@ -31,10 +31,11 @@ end
 --so we need to stub it in.  FYI AF version r12 is the version
 --used for 11.1.5 
 _G.AbstractFramework.SetTooltip = _G.AbstractFramework.SetTooltips
+
 br.api.GetSpellCooldown = function(spellID)
     ---@type SpellCooldownInfo
     local scdInfo = C_Spell.GetSpellCooldown(spellID)
-    return scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled
+    return scdInfo
     
 end
 
@@ -71,14 +72,15 @@ br.api.IsSpellCastable = function(SpellId,target)
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
     if not br.api.IsSpellKnown(SpellId) then return false end
 
-    local startTime, duration, enabled = br.api.GetSpellCooldown(SpellId)
+    ---@type SpellCooldownInfo
+    local cooldownInfo = br.api.GetSpellCooldown(SpellId)
     local isUsable, notEnoughPower = C_Spell.IsSpellUsable(SpellId)
     ---@type SpellInfo
     local spellInfo = C_Spell.GetSpellInfo(SpellId)
     local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
     
-    return  enabled and (startTime == 0 or duration == 0) and 
+    return  cooldownInfo.isEnabled and (cooldownInfo.startTime == 0 or cooldownInfo.duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
         not notEnoughPower and not isActiveOrQueued
 end
@@ -132,5 +134,42 @@ end
 br.api.GetAuraDataByIndex = function(...) return C_UnitAuras.GetAuraDataByIndex(...) end
 br.api.GetPlayerAuraBySpellID = function(...) return C_UnitAuras.GetPlayerAuraBySpellID(...) end
 br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end   
+br.api.UnitCastingInfo = function(...) return UnitCastingInfo(...) end
+br.api.UnitChannelInfo = function(...) return UnitChannelInfo(...) end
 
+
+br.api.IsValidTarget = function(unit)
+    if not unit then
+        return false 
+    end
+    if not br.ObjectExists(unit.guid) then 
+        return false 
+    end
+    if UnitIsDead(unit.WoWGUID) or unit:Health() <= 0 then 
+        return false 
+    end
+    if unit:IsPlayersControl() then 
+        return false 
+    end
+    if not UnitCanAttack("player",unit.WoWGUID) then 
+        return false end
+    if not UnitIsEnemy("player",unit.WoWGUID) then 
+        return false end
+    return true
+end
+
+br.api.GetDebuffDataByIndex = function(...)
+    return C_UnitAuras.GetDebuffDataByIndex(...)
+end
+br.PlayerTarget = function()
+    --Log:Log("11.1.5 API PlayerTarget called ")
+    local uId = br.ObjectField("player",0x1950,5)
+    --Log:Log("PlayerTarget returned: " .. tostring(uId))
+    return uId
+end
+
+br.UnitTarget = function(unitId)
+     --Log:Log("11.1.5 API UnitTarget called with args: " .. tostring(unitId))
+    return br.ObjectField(unitId,0x1950,5)
+end
 Log:Log("Initializing TWW 11.1.5 api")

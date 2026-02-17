@@ -62,13 +62,14 @@ br.Skinning = nil
 br.Gathering = nil
 br.PullMode = false
 br.Debug=false
+br.RotationBasePath = ""
 
 
 -- AF Windows
 br.WINDOW_TOGGLES = {}
 br.TOOLBAR = {}
 
-br.Settings = nil
+br.Settings = {}
 br.UI = {}
 br.UI.Elements = {}
 br.UI.Elements.MinimapIcon = {}

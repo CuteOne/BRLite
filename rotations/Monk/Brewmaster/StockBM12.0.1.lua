@@ -4,12 +4,12 @@ local _,br,_ = ...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Monk BM 11.1.5"
-local RotationShortName = "StockBM110105"
+local RotationName = "Stock Monk BM 12.0.1"
+local RotationShortName = "StockBM120001"
 local RotationVersion = 1.0
-local RotationDescription = "Standard BM rotation for 11.1.5 TWW "
-local RotationTOCLower = 110105
-local RotationTOCUpper = 110105
+local RotationDescription = "Standard BM rotation for 12.0.1 TWW "
+local RotationTOCLower = 120001
+local RotationTOCUpper = 120001
 local RotationClassName = "MONK"
 local RotationSpecializationID = 1  
 
@@ -52,6 +52,7 @@ local SpellList = {
     BlackOxBrew = 115399,
     WeaponsOfOrder = 387184,
     ExplodingKeg = 325153,
+    RushingJadeWind = 116847,
     
 }
 
@@ -113,7 +114,7 @@ local target = br.ActivePlayer:TargetUnit()
 local energy = br.ActivePlayer:Power()
 
 ---@type number
-local stagger = UnitStagger("player") or 0
+local stagger = br.unwrap(UnitStagger("player")) / player:MaxHealth()
 
 
 
@@ -121,7 +122,7 @@ local function Defensive()
    -- TODO check for healing spheres and either pull
    -- them in with SpinningCraneKick or use them
    -- with ExpelHarm depending on health defecit
-   return false
+   
 end
 
 --------------------------------------------------------
@@ -133,7 +134,7 @@ end
 local function Pulse()
     target = br.ActivePlayer:TargetUnit()
     energy = br.ActivePlayer:Power()
-    stagger = UnitStagger("player") / player:MaxHealth()
+    stagger = br.unwrap(UnitStagger("player")) / player:MaxHealth()
 
     --if player is busy, mounted, or dead then return and save cycles
     if player:IsBusy() or player:IsMounted() or UnitIsDeadOrGhost("player") then return end
@@ -188,15 +189,25 @@ local function Pulse()
         --TODO Logic to look for ranged casts upon you and use
         --Paralysis to interrupt them 
     end
+
+    if player:HealthPercent() <= 90 and cast.castCount.ExpelHarm() > 0 and cast.able.SpinningCraneKick() then
+        log:Log("SCK to draw in healing spheres")
+        return cast.SpinningCraneKick()
+    end
     
     --Auto Attack
     if not player:IsAuto() then player:StartAutoAttack() return end
 
     --Regular Rotation, mostly from SimulationCraft with some adjustments
+
+    if cast.able.RushingJadeWind() and target:Distance() <= 10 then return cast.RushingJadeWind() end
+
     if energy < 40 and cast.able.BlackOxBrew() then return cast.BlackOxBrew() end
     if buffs.up.PurifiedChi() and cast.able.CelestialBrew() then return cast.CelestialBrew() end
-    if cast.able.BlackoutKick() then return cast.BlackoutKick() end
-    if cast.able.ChiBurst() then return cast.ChiBurst() end
+    if cast.able.BlackoutKick()    then
+         return cast.BlackoutKick() 
+    end
+    if cast.able.ChiBurst() and not player:IsMoving() then return cast.ChiBurst() end
     if cast.able.WeaponsOfOrder() then return cast.WeaponsOfOrder() end
     if cast.able.RisingSunKick() and not player:HasTalent(TalentList.FluidityOfMotion) then 
         return cast.RisingSunKick() 
@@ -214,8 +225,7 @@ local function Pulse()
         return cast.RisingSunKick() 
     end
     if cast.able.PurifyingBrew() and not buffs.up.BlackoutCombo() then 
-        -- don't waste if we don't have stagger 7% or more
-        if stagger >= 0.07 then
+        if stagger >= 0.05 then
             log:Log("Using Purifying Brew to reduce stagger of " .. string.format("%.2f",stagger*100) .. "%")
             return cast.PurifyingBrew() 
         end
@@ -246,6 +256,12 @@ local function Pulse()
     if cast.able.SpinningCraneKick() and target:Distance() <= 8 then 
         return cast.SpinningCraneKick() end
     end
+
+    if cast.able.TigerPalm() and not player.LastCastSpell == SpellList.TigerPalm then 
+        return cast.TigerPalm() 
+    end
+    if cast.able.BlackoutKick() then return cast.BlackoutKick() end
+
 end
 
 --------------------------------------------------------

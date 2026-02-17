@@ -30,5 +30,10 @@
     [
         "unlocker/nn.lua"
     ],
+    "UNLOCKER-DMC": 
+    [
+        "unlocker/dmc.lua"
+
+    ],
     "LATE":    [    ]
 }

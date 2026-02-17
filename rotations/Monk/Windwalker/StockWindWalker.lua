@@ -239,7 +239,7 @@ local function Pulse()
     end
 
     if player.InCombat and not player:ValidTarget("target") then
-        print("No valid target, selecting closest in melee range")
+        --print("No valid target, selecting closest in melee range")
         player:TargetClosestInMeleeRange()
     end
 

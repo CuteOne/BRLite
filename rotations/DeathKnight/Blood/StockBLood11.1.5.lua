@@ -147,24 +147,28 @@ local function Pulse()
     if player:IsBusy() or 
             player:IsMounted() or 
             UnitIsDeadOrGhost("player")  
-            then return end
+            then return 
+            end
 
     --Any Defensive spells or out of combat buffs, etc.
     if Defensive() then return true end
 
     --Check for a valid Target if not find one
-    if player.InCombat and not player:ValidTarget("target")  then
+    if player.InCombat and player:TargetUnit() == nil  then
+        log:Log("No valid target, selecting closest in melee range")
         player:TargetClosestInMeleeRange()
     end
 
     --Testing Instance Priority Targeting
     player:InstanceSetPriorityTarget()
-
-
+   
     --One final check for validity before we bail back to the rotation manager
     if not UnitCanAttack("player","target") then return end
     target = player:TargetUnit()
-    if not target or UnitIsDeadOrGhost("target") then return end
+    if not target or UnitIsDeadOrGhost("target") then
+        --log:Log("Selected target is not valid after selection, returning to rotation manager")
+         return 
+   end
     meleeRange = target:Distance() <= 7.5
 
     player:EnsureFacing(target)

@@ -1,5 +1,5 @@
----@type _,br,_
-local _,br,_ = ...
+---@type _,br,Daemonic
+local _,br,dmc = ...
 
 ---@type AbstractFramework
 local AF = _G.AbstractFramework
@@ -222,29 +222,81 @@ function br:InitializeToolbar()
     end)
 
 
-    -- local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
-    -- brDebug:SetPoint("TOPLEFT",200,0)
-    -- AF.SetTooltips(brDebug,"TOPLEFT",-10,0,"Toggle Debug Mode.")
-    -- local brDebugInnerFrame = AF.CreateFrame(brDebug,nil,36,36)
-    -- brDebugInnerFrame:SetPoint("CENTER",0,0)
-    -- local DebugTex = brDebugInnerFrame:CreateTexture(nil,"ARTWORK")
-    -- DebugTex:SetTexture(136243)
-    -- DebugTex:SetSize(30,30)
-    -- DebugTex:SetPoint("CENTER",0,0)
-    -- DebugTex:SetAllPoints(brDebugInnerFrame)
-    -- brDebug:SetScript("OnClick",function()
-    --     ---@type Unit
-    --     local target = br.ActivePlayer:TargetUnit()
-    --     if target then
-    --         Log:Log("Debug Info for target: " .. target.name)
-    --         Log:Log("Unit is Dead or Ghost: " .. tostring(UnitIsDeadOrGhost(target.WoWGUID)))
-    --         Log:Log("Lootable Count: " .. tostring(br.ObjectManager:LootableCount()))
-    --         Log:Log("Skinnable Count: " .. tostring(br.ObjectManager:SkinnableCount()))
-    --         Log:Log("Loot Status: " .. tostring(br.ObjectLootable(target.guid)))
-    --         Log:Log("Is Skinnable: " .. tostring(br.ObjectSkinnable(target.guid)))
+    local brDebug = AF.CreateButton(toolbarFrame,nil,"yellow",40,40)
+    brDebug:SetPoint("TOPLEFT",240,0)
+    local brDebugInnerFrame = AF.CreateFrame(brDebug,nil,36,36)
+    brDebugInnerFrame:SetPoint("CENTER",0,0)
+    local DebugTex = brDebugInnerFrame:CreateTexture(nil,"ARTWORK")
+    DebugTex:SetTexture(136243)
+    DebugTex:SetSize(30,30)
+    DebugTex:SetPoint("CENTER",0,0)
+    DebugTex:SetAllPoints(brDebugInnerFrame)
+    brDebug:SetScript("OnClick",function()
+        ---@type Unit
+        local target = br.ActivePlayer:TargetUnit()
+        if not target then
+            Log:Log("No target selected.")
+        else
+            Log:Log("Target selected: " .. tostring(target.name))
+        end
 
-    --     end
-    -- end)
+        --get target guid
+        local tguid = UnitGUID("target")
+        for k,v in pairs(br.ObjectManager.Units) do
+            if v.WoWGUID == tguid then
+                Log:Log("Found target in Object Manager with guid: " .. tostring(k))
+                target = v
+                break
+            end
+        end
+        if not target then
+            Log:Log("Target not found in Object Manager.")
+            return 
+        else
+            Log:Log("Target found in Object Manager: " .. tostring(target.name))
+        end
+        for i = 0x1000,0x2300,8 do
+            local val = br.ObjectField(target.guid,i,5)
+            if val == br.ActivePlayer.guid then
+                Log:Log(string.format("Found target guid in Object Fields at offset 0x%X",i))
+                break
+            end
+        end
+        
+        if target then
+            -- Log:Log("Debug Info for target: " .. target.name)
+            -- Log:Log("Unit is Dead or Ghost: " .. tostring(UnitIsDeadOrGhost(target.WoWGUID)))
+            -- Log:Log("Lootable Count: " .. tostring(br.ObjectManager:LootableCount()))
+            -- Log:Log("Skinnable Count: " .. tostring(br.ObjectManager:SkinnableCount()))
+            -- Log:Log("Loot Status: " .. tostring(br.ObjectLootable(target.guid)))
+            -- Log:Log("Is Skinnable: " .. tostring(br.ObjectSkinnable(target.guid)))
+
+            -- print("Evaluating target: " .. tostring(target.name) .. " Distance: " .. tostring(target:Distance()))
+            -- print("WowGUID:        [" .. tostring(target.WoWGUID) .. "]     type: " .. type(target.WoWGUID))
+            -- print("Tool ID:            [" .. tostring(target.guid) .. "]     type: " .. type(target.guid))
+            -- print("Guid of Target:  [" .. UnitGUID("target") .. "]      type: " .. type(UnitGUID("target")))
+
+            -- --print("IsAlive: " .. tostring(target:IsAlive()))
+            -- print("UnitCanAttack: " .. tostring(UnitCanAttack("player",target.WoWGUID)))
+            -- print("UnitIsEnemy: " .. tostring(UnitIsEnemy("player",target.WoWGUID)))
+            -- print("'target' Can Attack: " .. tostring(UnitCanAttack("player","target")))
+            -- print("'target' Is Enemy: " .. tostring(UnitIsEnemy("player","target")) )
+            -- print("Unit Reaction: " .. tostring(UnitReaction("player",target.WoWGUID)))
+            -- print('"target" Reaction: ' .. tostring(UnitReaction("player","target")))
+            -- print("IsAffectingCombat: " .. tostring(UnitAffectingCombat(target.WoWGUID)))
+            -- print('"target" Is Affecting Combat: ' .. tostring(UnitAffectingCombat("target")))
+            -- print("Is Targetting Player: " .. tostring(target:IsTargetingPlayer()))
+            -- print("Object Exists: " .. tostring(br.ObjectExists(target.guid)))
+            -- print("Health: " .. tostring(br.unwrap(UnitHealth(target.WoWGUID))))
+            -- print("Health using apis: " .. tostring(br.apis.UnitHealth(target.WoWGUID)))
+            -- print("Target Health: " .. tostring(br.unwrap(UnitHealth("target"))))
+            -- print("-------------------------------------------------------------------")
+           
+
+
+        end
+        
+    end)
     br.TOOLBAR = toolbarFrame
 end    
 

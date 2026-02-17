@@ -63,7 +63,7 @@ function Unit:new(guid,X,Y,Z)
     obj.Z = Z or 0
     obj.Created = GetTime()
     obj.LastUpdated = GetTime()
-    obj.WoWGUID = UnitGUID(guid)
+    obj.WoWGUID = br.api.GetUnitGUID(guid)
     obj.name = br.ObjectOrUnitName(guid)
     return obj
 end
@@ -84,7 +84,11 @@ function Unit:Freshness()
 end
 
 function Unit:Health()
-    return br.api.UnitHealth(self.guid)
+   -- print("looging at unit health for guid: ", self.guid, " WoWGUID: ", self.WoWGUID)
+    local hp = br.api.UnitHealth(self.guid)
+   -- print("Health value: ", hp)
+    return hp
+
 end
 
 function Unit:MaxHealth()
@@ -147,15 +151,19 @@ end
 function Unit:GetTarget()
     local target = nil
     if br.clientTOC == 110105 then
-        target = br.ObjectField(self.guid,0x1950,5)
+        --target = br.ObjectField(self.guid,0x1950,5)
+        target = br.ObjectField(self.guid,0x17E8,5)
     else
         target = br.UnitTarget(self.guid)
+    end
+    if target then
+       -- print("Unit:GetTarget for unit ", self.name, " returned target guid: ", target," My GUID: ", br.ActivePlayer.guid)
     end
     return target
 end
 
 function Unit:IsInterruptable()
-    local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, interrupt = UnitCastingInfo(self.WoWGUID)
+    local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, interrupt = br.api.UnitCastingInfo(self.WoWGUID)
     if spell and interrupt then
         return true
     end
@@ -191,9 +199,10 @@ function Unit:IsPlayersControl()
     return false
 end
 
-function Unit:IsTargettingPlayer()
+function Unit:IsTargetingPlayer()
     local target = self:GetTarget()
     if target and target == br.ActivePlayer.guid then
+        --print("Unit:IsTargetingPlayer for unit ", self.name, " returned true. Target guid: ", target," My GUID: ", br.ActivePlayer.guid)
         return true
     end
     return false
@@ -213,7 +222,9 @@ function Unit:IsTargetingPet()
 end
 
 function Unit:Distance()
-    return br.DistanceBetweenObjects(br.ActivePlayer.guid, self.guid)
+    if not br.ObjectExists(self.guid) then return math.huge end
+    local distance = br.DistanceBetweenObjects(br.ActivePlayer.guid, self.guid)
+    return distance or math.huge
 end
 
 function Unit:HasDebuff(auraID)

@@ -25,8 +25,9 @@ function br.Framework:Startup()
         Log:LogError("ERROR: AbstractFramework not found. BRLite cannot start.")
         return
     end
+    print("Settings Root Path: " .. tostring(br.Settings.RootPath))
     
-    Settings:Initialize("/scripts/settings","brlite_settings.json")  
+    Settings:Initialize(br.Settings.RootPath,"brlite_settings.json")  
 
     br.pulse = Settings:GetSettingToggle("BR_ENABLED",true)
     br.DoMovement = Settings:GetSettingToggle("BR_MOVEMENT_ENABLED",true)
@@ -56,7 +57,7 @@ function br.Framework:Startup()
         specName = "Initial"
     end
     
-    local rotationPath = "/scripts/brlite/rotations/" .. br.ActivePlayer.ClassName .. "/" .. specName .. "/"
+    local rotationPath = br.RotationBasePath .. "/" .. br.ActivePlayer.ClassName .. "/" .. specName .. "/"
     local rotFiles = br.ListFiles(rotationPath .. "*.lua")
     if not rotFiles or #rotFiles == 0 then
         Log:LogError("No rotation files found in path: " .. rotationPath)

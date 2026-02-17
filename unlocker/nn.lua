@@ -106,6 +106,13 @@ br.FollowUnit               = function(...) return nn.Unlock("FollowUnit",...) e
 br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
 
 br.unwrap = function(...)
+    if br.clientTOC < 120000 then
+        return(...)
+    end
     return secretunwrap(...)
+end
+
+br.api.GetUnitGUID = function(unitId)
+    return UnitGUID(unitId)
 end
 br.Logging:Log("nn Unlocker Loaded");

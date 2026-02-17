@@ -264,7 +264,7 @@ end
 function om:EnemiesInSpellRange(spellID)
     local count = 0
     for _,v in pairs(self.Units) do
-        if v:IsAlive() and UnitCanAttack("player",v.guid) and br.ActivePlayer.cast.inRange.Spell(spellID,v.guid) then
+        if v:IsAlive() and br.apis.UnitCanAttack("player",v.guid) and br.ActivePlayer.cast.inRange.Spell(spellID,v.guid) then
             count = count + 1
         end
     end

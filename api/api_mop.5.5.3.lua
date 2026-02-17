@@ -33,21 +33,29 @@ br.api.GetSpecializationName = function()
 end
 
 br.api.GetSpellCooldown = function(spellID)
-    local start, duration, enabled = GetSpellCooldown(spellID)
-    return start, duration, enabled
+    return C_Spell.GetSpellCooldown(spellID)
 end
 
 br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
-    if not br.api.IsSpellKnown(SpellId) then return false end
+    if not br.api.IsSpellKnown(SpellId) then 
+       -- print("Spell not known:", SpellId)
+        return false 
 
-    local startTime, duration, enabled = br.api.GetSpellCooldown(SpellId)
-    local isUsable, notEnoughPower = IsUsableSpell(SpellId)
-    local inRange = IsSpellInRange(GetSpellInfo(SpellId), "target")
+    end
+
+    ---@type SpellCooldownInfo
+    local scdInfo = br.api.GetSpellCooldown(SpellId)
+    local isUsable, notEnoughPower = C_Spell.IsSpellUsable(SpellId)
+    local inRange = C_Spell.IsSpellInRange(SpellId, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
+    -- if SpellId == 853 then
+    --     print("HOJ cooldown:", scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled)
+    --     print("Is usable:", isUsable, "Not enough power:", notEnoughPower)
+    -- end
     
-    return  enabled == 1 and (startTime == 0 or duration == 0) and 
+    return  scdInfo.isEnabled and (scdInfo.startTime == 0 or scdInfo.duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
         not notEnoughPower and not isActiveOrQueued
 end
@@ -98,5 +106,23 @@ br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end
 br.api.InteractDistance = 5
 br.api.MeleeDistance = 8.5
 
+br.api.IsValidTarget = function(unit)
+    if not unit or not br.ObjectExists(unit) then return false end
+    if UnitIsDead(unit.WoWGUID) or unit:Health() <= 0 then return false end
+    if unit:IsPlayersControl() then return false end
+    if not UnitCanAttack("player",unit.WoWGUID) then return false end
+    if not UnitIsEnemy("player",unit.WoWGUID) then return false end
+    return true
+end
+
+br.api.UnitCastingInfo = function(...)
+    return UnitCastingInfo(...)
+end
+
+br.api.UnitChannelInfo = function(...)
+    return UnitChannelInfo(...)
+end
+
+br.api.GetDebuffDataByIndex = function(...) return C_UnitAuras.GetDebuffDataByIndex(...) end
 
 Log:Log("Initializing Classic MOP ERA api")

@@ -29,10 +29,16 @@ br.api.GetSpecializationName = function()
    return select(2,GetSpecializationInfo(Player.Specialization))
 end
 
-br.api.GetSpellCooldown = function(spellID)
+br.api.GetSpellCooldown = function(...)
     ---@type SpellCooldownInfo
-    local scdInfo = C_Spell.GetSpellCooldown(spellID)
-    return scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled
+    local scdInfo = C_Spell.GetSpellCooldown(...)
+    scdInfo.activeCategory = br.unwrap(scdInfo.activeCategory)
+    scdInfo.duration = tonumber(br.unwrap(scdInfo.duration))
+    scdInfo.startTime = tonumber(br.unwrap(scdInfo.startTime))
+    scdInfo.isEnabled = br.unwrap(scdInfo.isEnabled)
+    scdInfo.isOnGCD = br.unwrap(scdInfo.isOnGCD)
+    scdInfo.timeUntilEndOfStartRecovery = tonumber(br.unwrap(scdInfo.timeUntilEndOfStartRecovery))
+    return scdInfo
     
 end
 
@@ -67,18 +73,20 @@ end
 br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
-    if not br.api.IsSpellKnown(SpellId) then return false end
+    if not br.api.IsSpellKnown(SpellId) then 
+        --print("Spell not known: ", SpellId)
+        return false 
+    end
 
-    local startTime, duration, enabled = br.api.GetSpellCooldown(SpellId)
-    startTime,duration,enabled = br.unwrap(startTime,duration,enabled)
+    ---@type SpellCooldownInfo
+    local cooldownInfo = br.api.GetSpellCooldown(SpellId)
+    local startTime, duration, enabled = cooldownInfo.startTime, cooldownInfo.duration, cooldownInfo.isEnabled
+    
     local isUsable, notEnoughPower = C_Spell.IsSpellUsable(SpellId)
     ---@type SpellInfo
     local spellInfo = C_Spell.GetSpellInfo(SpellId)
     local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
-    -- if spellInfo.name == "Arcane Shot" then
-    --     print("startTime: ",startTime," dur: ",duration, " enabled: ", tostring(enabled)," isusable: ", tostring(isUsable), " notEnoughPower: ", notEnoughPower)
-    -- end
     
     return  enabled and (startTime == 0 or duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
@@ -86,7 +94,7 @@ br.api.IsSpellCastable = function(SpellId,target)
 end
 
 br.api.IsSpellKnown = function(SpellId)
-    return IsSpellKnown(SpellId)
+    return C_SpellBook.IsSpellInSpellBook(SpellId)
 end
 
 br.api.AutoShotOn = false
@@ -113,10 +121,10 @@ br.api.StartAutoShot = function()
 end
 
 --Secret field proxies
-br.api.UnitHealth = function(...) return br.unwrap(UnitHealth(...)) end
-br.api.UnitHealthMax = function(...) return br.unwrap(UnitHealthMax(...)) end
-br.api.UnitPower = function(...) return br.unwrap(UnitPower(...)) end
-br.api.UnitPowerMax = function(...) return br.unwrap(UnitPowerMax(...)) end
+br.api.UnitHealth = function(...) return br.unwrap(br.apis.UnitHealth(...)) end
+br.api.UnitHealthMax = function(...) return br.unwrap(br.apis.UnitHealthMax(...)) end
+br.api.UnitPower = function(...) return br.unwrap(br.apis.UnitPower(...)) end
+br.api.UnitPowerMax = function(...) return br.unwrap(br.apis.UnitPowerMax(...)) end
 
 
 local function UnpackAuraData(auraData)
@@ -133,16 +141,28 @@ end
 
 
 br.api.GetDebuffDataByIndex = function(...)
+    -- ---@type AuraData
+    -- local auraData = br.apis.C_UnitAuras.GetDebuffDataByIndex(...)
+    -- if not auraData then return nil end
+    -- auraData = UnpackAuraData(auraData)
+    local name,rank,icon,count,debuffType, duration, expirationTime, unitCaster,isStealable, shouldConsolidate, spellId = br.apis.UnitDebuff(...)
     ---@type AuraData
-    local auraData = C_UnitAuras.GetDebuffDataByIndex(...)
-    if not auraData then return nil end
-    auraData = UnpackAuraData(auraData)
+    local auraData = {
+        name = tostring(br.unwrap(name)),
+        applications = tonumber(br.unwrap(count)),
+        icon = tonumber(br.unwrap(icon)),
+        expirationTime = tonumber(br.unwrap(expirationTime)),
+        duration = tonumber(br.unwrap(duration)),
+        sourceUnit = br.unwrap(unitCaster),
+        isStealable = br.unwrap(isStealable),
+        spellId = tonumber(br.unwrap(spellId)),
+    }
     return auraData
 end
 
 br.api.GetPlayerAuraBySpellID = function(...)
     ---@type AuraData
-    local auraData = C_UnitAuras.GetPlayerAuraBySpellID(...)
+    local auraData = br.apis.C_UnitAuras.GetPlayerAuraBySpellID(...)
     if not auraData then return nil end
     auraData = UnpackAuraData(auraData)
     return auraData
@@ -150,9 +170,56 @@ end
 
 
 br.api.FindAuraByName = function(...)
-    local name,icon,count,dispelType,duration,expirationTime = AuraUtil.FindAuraByName(...)
+    local name,icon,count,dispelType,duration,expirationTime = br.apis.AuraUtil.FindAuraByName(...)
     name,icon,count,dispelType,duration,expirationTime = br.unwrap(name,icon,count,dispelType,duration,expirationTime)
     return name,icon,count,dispelType,duration,expirationTime
+end
+
+    
+br.api.UnitCastingInfo = function(...)
+    return br.apis.UnitCastingInfo(...)
+end
+br.api.UnitChannelInfo = function(...)
+    return br.apis.UnitChannelInfo(...)
+end
+
+br.api.IsValidTarget = function(unit)
+    if not unit then return false end
+    if unit:Distance() <= 15 then
+    -- print("Evaluating unit: ",unit.name," with guid: ", unit.WoWGUID)
+    -- print("Alive Status: ", unit:IsAlive(), " Health: ", unit:Health())
+    -- print("UnitIsDead status: ", UnitIsDead(unit.WoWGUID))
+    -- print("Is Targeting Player: ", tostring(unit:IsTargetingPlayer()), " Is Targeting Pet: ", tostring(unit:IsTargetingPet()))
+    -- print("---------------------------------------")
+    end
+    if UnitIsDead(unit.WoWGUID) or unit:Health() <= 0 then return false end
+    if 
+        (unit:IsTargetingPlayer() or unit:IsTargetingPet()) and
+        br.apis.UnitCanAttack("player", unit.WoWGUID)
+        then
+        return true
+    end
+end
+
+br.api.GetSpellCastCount = function(...)
+    local castCount = br.apis.C_Spell.GetSpellCastCount(...)
+    if not castCount then return nil end
+    return tonumber(br.unwrap(castCount))
+end
+
+br.api.GetSpellCharges = function(...)
+    ---@type SpellChargeInfo
+    local sci = br.apis.C_Spell.GetSpellCharges(...)
+    print("GetSpellCharges for ", tostring(...), ": ", sci and ("currentCharges: " .. tostring(sci.currentCharges) .. " maxCharges: " .. tostring(sci.maxCharges)) or "nil")
+    local sci2 = br.apis.C_Spell.GetSpellCastCount(...)
+    print("Direct C_Spell.GetSpellCharges for ", tostring(...), ": ", sci2 and ("currentCharges: " .. tostring(sci2.currentCharges) .. " maxCharges: " .. tostring(sci2.maxCharges)) or "nil")
+    if not sci then return nil end
+    sci.currentCharges = tonumber(br.unwrap(sci.currentCharges))
+    sci.maxCharges = tonumber(br.unwrap(sci.maxCharges))
+    sci.cooldownStartTime = tonumber(br.unwrap(sci.cooldownStartTime))
+    sci.cooldownDuration = tonumber(br.unwrap(sci.cooldownDuration))
+    sci.chargeModRate = tonumber(br.unwrap(sci.chargeModRate))
+    return sci
 end
 
 br.api.InteractDistance = 5

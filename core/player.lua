@@ -115,6 +115,8 @@ Player.SpecializationName = br.api.GetSpecializationName()
         ---@field charges table<string, fun(): number> @Returns the current charges of the spell
         ---@field last table? any @The last spell that was cast
         ---@field atTargetGround table<string, fun(unit: Unit|Player): boolean?> @Casts the spell at the ground location of the target unit
+        ---@field lowestRank table<string, fun(target?: any): boolean?> @Casts the lowest rank of the spell on the target
+        ---@field castCount table<string, fun(): number> @Returns the number of times the spell has been cast
         ---@
 Player.cast = {}
 function Player:SetupSpells(SpellList)
@@ -130,7 +132,8 @@ function Player:SetupSpells(SpellList)
         self.cast.last = function() return self.LastCastSpell end
         self.cast.atTargetGround = {}
         self.cast.charges = {}
-         self.cast.lowestRank = {}
+        self.cast.lowestRank = {}
+        self.cast.castCount = {}
 
         for spell,id in pairs(SpellList) do
            ---Returns the primary power cost of the spell
@@ -192,7 +195,7 @@ function Player:SetupSpells(SpellList)
 
             self.cast.cdRemains[spell] = function()
                 ---@type SpellCooldownInfo
-                local spellCooldownInfo = C_Spell.GetSpellCooldown(id)
+                local spellCooldownInfo = br.api.GetSpellCooldown(id)
                 if spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0 then
                     return 0
                 else
@@ -238,12 +241,12 @@ function Player:SetupSpells(SpellList)
             end
 
             self.cast.gcdRemains = function()
-               
-                local gcdStart, gcdDuration, _ = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
-                if gcdStart == 0 or gcdDuration == 0 then
+                ---@type SpellCooldownInfo
+                local gcdCooldownInfo = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
+                if gcdCooldownInfo.startTime == 0 or gcdCooldownInfo.duration == 0 then
                     return 0
                 else
-                    local remaining = (gcdStart + gcdDuration) - GetTime()
+                    local remaining = (gcdCooldownInfo.startTime + gcdCooldownInfo.duration) - GetTime()
                     if remaining < 0 then
                         return 0
                     else
@@ -253,16 +256,19 @@ function Player:SetupSpells(SpellList)
             end
 
             self.cast.gcdMax = function()
-                local _, gcdDuration, _ = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
-                return gcdDuration
+                local gcdCooldownInfo = br.api.GetSpellCooldown(61304) --61304 is the global cooldown spell ID
+                return gcdCooldownInfo.duration
+            end
+            self.cast.castCount[spell] = function()
+                return br.api.GetSpellCastCount(id)
             end
             self.cast.charges[spell] = function()
                 ---@type SpellInfo
                 local spellInfo = C_Spell.GetSpellInfo(id)
                 ---@type SpellChargeInfo
-                local spellChargeInfo = C_Spell.GetSpellCharges(spellInfo.name)
+                local spellChargeInfo = br.api.GetSpellCharges(id)
                 
-                if spellChargeInfo.currentCharges == nil then
+                if not spellChargeInfo or spellChargeInfo.currentCharges == nil then
                     return 0
                 end
                 return spellChargeInfo.currentCharges
@@ -407,8 +413,7 @@ function Player:TargetRange()
 end
 
 function Player:TargetUnit()
-    local myTarget = br.PlayerTarget()
-    if not myTarget then return nil end
+    local myTarget = br.PlayerTarget() 
     return br.ObjectManager.Units[myTarget]
 end
 
@@ -521,12 +526,12 @@ function Player:IsAutoShot()
 end
 
 function Player:IsCasting()
-    local name = select(1,UnitCastingInfo("player"))
+    local name = select(1,br.api.UnitCastingInfo("player"))
     return name ~= nil
 end
 
 function Player:IsChanneling()
-    local name = select(1,UnitChannelInfo("player"))
+    local name = select(1,br.api.UnitChannelInfo("player"))
     return name ~= nil
 end
 
@@ -646,8 +651,6 @@ function Player:TargetWeakestInMeleeRange()
         log:LogTargetChange(bestTarget)
         br.SetFocus(bestTarget.guid)
         br.TargetUnit("focus")
-    else
-        log:Log("No valid melee target found.")
     end
 end
 
@@ -656,12 +659,13 @@ function Player:TargetClosestInMeleeRange()
     local bestDistance = math.huge
     br.ObjectManager:Update()
     for _,v in pairs(br.ObjectManager.Units) do
-        if v:Distance() <= 10 and
+        if  br.api.IsValidTarget(v)
+        and v:Distance() <= 10 and
             v:IsAlive() and
             not v:IsPlayersControl() and
             UnitCanAttack("player",v.WoWGUID) and
-            UnitIsEnemy("player",v.WoWGUID)
-
+            UnitIsEnemy("player",v.WoWGUID) and 
+            v:IsTargetingPlayer()
         then
             local distance = v:Distance()
             if distance < bestDistance then
@@ -674,8 +678,6 @@ function Player:TargetClosestInMeleeRange()
         log:LogTargetChange(bestTarget)
         br.SetFocus(bestTarget.guid)
         br.TargetUnit("focus")
-    else
-        log:Log("No valid melee target found.")
     end
 end
 
@@ -684,7 +686,7 @@ function Player:FindNonTargetingWithinRange(minrange,maxrange)
         if v:Distance() <= maxrange and
             v:Distance() >= minrange and
             v:IsAlive() and
-            not v:IsTargettingPlayer() and
+            not v:IsTargetingPlayer() and
             UnitIsEnemy("player",v.WoWGUID) and
             UnitCanAttack("player",v.WoWGUID)
         then
@@ -696,24 +698,23 @@ end
 
 function Player:TargetBest()
     local bestTarget = nil
-    local bestTTD = math.huge
+    local bestDistance = math.huge
     for _,v in pairs(br.ObjectManager.Units) do
+        local isAlive = v:IsAlive()
+        local isTargetingPlayer = v:IsTargetingPlayer()
+        local isTargetingPet = v:IsTargetingPet()
+        local distance = v:Distance()
         if 
-             v:TTD() > 0 and 
-             v:IsAlive() and
-            (v:IsTargettingPlayer() or v:IsTargetingPet())
+             isAlive and 
+             (isTargetingPet or isTargetingPlayer)
         then
-            local ttd = v:TTD()
-            if ttd < bestTTD then
-                bestTTD = ttd
+            local distance = v:Distance()
+            if distance < bestDistance then
+                bestDistance = distance
                 bestTarget = v
             end
         end
     end
-    -- if bestTarget and bestTarget.name == "Unknown" then
-    --     br.ObjectManager.Units[bestTarget.guid] = nil
-    --     bestTarget = nil
-    -- end
     if bestTarget then
         log:LogTargetChange(bestTarget)
         br.SetFocus(bestTarget.guid)
@@ -873,6 +874,22 @@ function Player:InstancePriorityTarget(unitToRank)
         end
     end
     return 0
+end
+
+function Player:Enemies(yds)
+    local count = 0
+    local enemies = {}
+    for _,v in pairs(br.ObjectManager.Units) do
+        if v:Distance() <= yds and
+            v:IsAlive() and
+            UnitIsEnemy("player",v.WoWGUID) and
+            UnitCanAttack("player",v.WoWGUID)
+        then
+            count = count + 1
+            enemies[count] = v
+        end
+    end
+    return enemies
 end
 
 

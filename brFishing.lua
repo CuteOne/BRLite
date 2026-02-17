@@ -15,7 +15,7 @@ function Fishing:Fish()
         self.Active = false
         return
     end
-    local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, spellId = UnitChannelInfo("player")
+    local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, spellId = br.api.UnitChannelInfo("player")
     if name == nil then
         ---@type SpellInfo
         local spellName = C_Spell.GetSpellInfo(131474) -- 131474 is the spell ID for "Fishing"

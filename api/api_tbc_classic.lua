@@ -125,6 +125,14 @@ br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end
 br.api.InteractDistance = 5
 br.api.MeleeDistance = 8.5
 
+br.api.IsValidTarget = function(unit)
+    if not unit or not br.ObjectExists(unit) then return false end
+    if UnitIsDead(unit.WoWGUID) or unit:Health() <= 0 then return false end
+    if unit:IsPlayersControl() then return false end
+    if not UnitCanAttack("player",unit.WoWGUID) then return false end
+    if not UnitIsEnemy("player",unit.WoWGUID) then return false end
+    return true
+end
 
 
 Log:Log("Initializing TBC Classic API")

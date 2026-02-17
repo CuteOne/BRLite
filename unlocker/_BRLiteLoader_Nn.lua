@@ -6,6 +6,9 @@ local br = nn:Require("/scripts/BRLite/br.lua",nn)
 
 br.unlocker="NN"
 br.Debug=true
+br.Settings.RootPath = "/scripts/settings/"
+br.RotationBasePath =  "/scripts/Brlite/rotations"
+
 nn:Require("/scripts/BRLite/Bootstrap_NN.lua",br,nn)
 nn:Require("/scripts/BRLite/brLogging.lua",br,nn)
 br.Intialization:Startup() --Unlocker and core functionality loaded here.  This is specific to unlocker.
