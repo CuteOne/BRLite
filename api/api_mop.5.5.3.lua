@@ -40,28 +40,38 @@ br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
     if not br.api.IsSpellKnown(SpellId) then 
-       -- print("Spell not known:", SpellId)
+        print("Spell ID ", SpellId, " is not known by the player.")
         return false 
 
-    end
+        end
 
     ---@type SpellCooldownInfo
-    local scdInfo = br.api.GetSpellCooldown(SpellId)
+    local cooldownInfo = br.api.GetSpellCooldown(SpellId)
     local isUsable, notEnoughPower = C_Spell.IsSpellUsable(SpellId)
-    local inRange = C_Spell.IsSpellInRange(SpellId, "target")
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
-    -- if SpellId == 853 then
-    --     print("HOJ cooldown:", scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled)
-    --     print("Is usable:", isUsable, "Not enough power:", notEnoughPower)
+
+    --  if spellInfo.name == "Stormstrike" then
+    --     print("Cooldown info for Stormstrike: ", cooldownInfo)
+    --     print("IsUsable: ", isUsable, " NotEnoughPower: ", notEnoughPower, " InRange: ", inRange, " IsActiveOrQueued: ", isActiveOrQueued)
     -- end
     
-    return  scdInfo.isEnabled and (scdInfo.startTime == 0 or scdInfo.duration == 0) and 
+    return  cooldownInfo.isEnabled and (cooldownInfo.startTime == 0 or cooldownInfo.duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
         not notEnoughPower and not isActiveOrQueued
 end
 
 br.api.IsSpellKnown = function(SpellId)
-    return IsSpellKnown(SpellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    if not spellInfo then return false end
+    if C_SpellBook and C_SpellBook.IsSpellInSpellBook then
+        return C_SpellBook.IsSpellInSpellBook(spellInfo.spellID)
+    else
+        return IsSpellKnownOrOverridesKnown(spellInfo.spellID)
+    end
 end
 
 br.api.AutoShotOn = false

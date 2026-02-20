@@ -153,8 +153,14 @@ function Player:SetupSpells(SpellList)
                 if self.cast.gcdRemains() > 0  then 
                     return false
                 end
+
+                ---@type SpellInfo
+                local spellInfo = C_Spell.GetSpellInfo(spellid)
+
+                --Get Override spell if any
+                --local overrideSpellId = C_Spell.GetOverrideSpell(spellInfo.name)
                 target = target or "target"
-                local castable = br.api.IsSpellCastable(spellid,target)
+                local castable = br.api.IsSpellCastable(spellInfo.name,target)
                 return castable
 
             end
@@ -171,7 +177,8 @@ function Player:SetupSpells(SpellList)
                 log:LogCast(tostring(spell))
                 local spellInfo = C_Spell.GetSpellInfo(id)
                 self.LastCastSpell = id
-                return br.CastSpellByName(spellInfo.name,target)
+                br.CastSpellByName(spellInfo.name,target)
+                return true
             end
 
             self.cast.lowestRank[spell] = function(target)
@@ -180,7 +187,8 @@ function Player:SetupSpells(SpellList)
                 log:LogCast(tostring(lowestRankName))
                 self.cast.last = id
                 Player.LastCastSpell = id
-                return br.CastSpellByName(lowestRankName,target)
+                br.CastSpellByName(lowestRankName,target)
+                return true
             end
 
             self.cast.secondary[spell] = function(target)
@@ -190,7 +198,8 @@ function Player:SetupSpells(SpellList)
                 Player.LastCastSpell = id
                 ---@type SpellInfo
                 local spellInfo = C_Spell.GetSpellInfo(id)
-                return br.CastSpellByName(spellInfo.name,target)
+                br.CastSpellByName(spellInfo.name,target)
+                return true
             end
 
             self.cast.cdRemains[spell] = function()
@@ -284,6 +293,7 @@ end
 ---@field down table<string, fun(): boolean> @Returns whether the buff is currently inactive
 ---@field stacks table<string, fun(): number> @Returns the current stack count of the buff
 ---@field remaining table<string, fun(): number> @Returns the remaining duration of the buff in seconds
+---@field maxStacks table<string, fun(): number> @Returns the maximum stack count of the buff
 Player.buffs = {}
 function Player:BuffSetup(AuraList)
     self.buffs = self.buffs or {}
@@ -291,6 +301,7 @@ function Player:BuffSetup(AuraList)
     self.buffs.down={}
     self.buffs.stacks={}
     self.buffs.remaining={}
+    self.buffs.maxStacks = {}
     for auraName,auraID in pairs(AuraList) do
         self.buffs.up[auraName] = function()
 
@@ -312,6 +323,13 @@ function Player:BuffSetup(AuraList)
             else
                 return stacks or 0
             end
+        end
+
+        self.buffs.maxStacks[auraName] = function()
+             ---@type AuraData
+            local auraData = br.api.GetPlayerAuraBySpellID(auraID)
+            if auraData == nil then return 0 end
+            return auraData.maxCharges or 0
         end
 
         self.buffs.remaining[auraName] = function()
@@ -464,7 +482,9 @@ function Player:AlternatePowerPercent(powerType)
     return (power / maxPower) * 100
 end
 function Player:AlternatePowerDeficit(powerType)
-    return self:MaxAlternatePower(powerType) - self:AlternatePower(powerType)
+    local power = self:AlternatePower(powerType)
+    local maxPower = self:MaxAlternatePower(powerType)
+    return maxPower - power
 end
 
 function Player:Health()
@@ -472,6 +492,10 @@ function Player:Health()
 end
 function Player:MaxHealth()
     return br.api.UnitHealthMax("player")
+end
+
+function Player:Level()
+    return UnitLevel("player")
 end
 function Player:HealthPercent()
     local health = self:Health()
@@ -567,21 +591,22 @@ function Player:IsSpellKnown(spellId)
 end
 
 function Player:EnsureMHWeaponEnchant(spellId,AuraId)
-    if self.LastCastSpell == spellId or not self:IsSpellKnown(spellId) then
+    if  self.LastCastSpell == spellId or 
+        not self:IsSpellKnown(spellId) or 
+        not br.api.IsSpellCastable(spellId) then
         return false
     end
     local _, _, _, mainHandEnchantID, _, _, _, _ = GetWeaponEnchantInfo()
     if AuraId and AuraId ~= mainHandEnchantID then
         --@type SpellInfo
         local spellInfo = C_Spell.GetSpellInfo(spellId)
-        
         log:LogCast("Mainhand Weapon: " .. spellInfo.name)
         br.CastSpellByName(spellInfo.name,"player")
         return true
     end
 end
 function Player:EnsureOHWeaponEnchant(spellId,AuraId)
-    if self.LastCastSpell == spellId or not self:IsSpellKnown(spellId) then
+    if self.LastCastSpell == spellId or not self:IsSpellKnown(spellId) or not br.api.IsSpellCastable(spellId) then
         return false
     end
     local _, _, _, _, _, _, _, offHandEnchantID = GetWeaponEnchantInfo()
@@ -654,13 +679,23 @@ function Player:TargetWeakestInMeleeRange()
     end
 end
 
-function Player:TargetClosestInMeleeRange()
+function Player:TargetClosestInMeleeRange(yds)
+    yds = yds or 10
     local bestTarget = nil
     local bestDistance = math.huge
     br.ObjectManager:Update()
     for _,v in pairs(br.ObjectManager.Units) do
+        local isValidTarget = br.api.IsValidTarget(v)
+        local isAlive = v:IsAlive()
+        local isTargetingPlayer = v:IsTargetingPlayer()
+        local CanAttack = UnitCanAttack("player",v.WoWGUID)
+        local IsEnemy = UnitIsEnemy("player",v.WoWGUID)
+        if v:Distance() <= yds then
+            --print("Target: " .. tostring(v.name) .. " Valid: " .. tostring(isValidTarget) .. " Alive: " .. tostring(isAlive) .. " TargetingPlayer: " .. tostring(isTargetingPlayer) .. " CanAttack: " .. tostring(CanAttack) .. " IsEnemy: " .. tostring(IsEnemy))
+        end 
+
         if  br.api.IsValidTarget(v)
-        and v:Distance() <= 10 and
+        and v:Distance() <= yds and
             v:IsAlive() and
             not v:IsPlayersControl() and
             UnitCanAttack("player",v.WoWGUID) and
@@ -747,8 +782,9 @@ function Player:CloseToMelee(unit)
     unit = unit or br.ActivePlayer:TargetUnit()
     if not unit then return false end
     local distance = br.DistanceBetweenObjects(self.guid,unit.guid)
-    if distance and distance > 8 then
+    if distance and distance > 7 then
         br.ClickToMove(br.ObjectLocation(unit.guid))
+        br.UpdateLastHardwareAction()
         br.SendMovementHeartbeat()
         return true
     end
@@ -765,8 +801,10 @@ function Player:CloseToRange(unit,range)
         br.SendMovementHeartbeat()
         return true
     else
-        br.ClickToMove(br.ObjectLocation(self.guid)) --Stop moving
-        br.SendMovementHeartbeat()      
+        if self:IsMoving() then
+            br.ClickToMove(br.ObjectLocation(self.guid)) --Stop moving
+            br.SendMovementHeartbeat()      
+        end
     end
     return false
 end
@@ -874,6 +912,94 @@ function Player:InstancePriorityTarget(unitToRank)
         end
     end
     return 0
+end
+
+function Player:HasBuff(auraID)
+    return C_UnitAuras.GetPlayerAuraBySpellID(auraID) ~= nil
+end
+
+function Player:CanCastSpell(spellId,target)
+    target = target or "target"
+    local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellId)
+    local inRange
+    inRange = C_Spell.IsSpellInRange(spellId, target)
+    ---@type SpellCooldownInfo
+    local spellCooldownInfo = C_Spell.GetSpellCooldown(spellId)
+    local castable=
+                  (spellCooldownInfo.startTime == 0 or spellCooldownInfo.duration == 0)
+                    and isUsable 
+                    and (inRange == nil or inRange)
+                    and not insufficientPower
+                
+    return castable
+end
+
+function Player:CastSpellById(spellId, target)
+    if not self:CanCastSpell(spellId,target) then
+        log:LogError("Attempted to cast spell ID: " .. tostring(spellId) .. " which is not castable.")
+        return false
+    end
+    local spellInfo = C_Spell.GetSpellInfo(spellId)
+    if spellInfo then
+        self:CastSpellByName(spellInfo.name, target)
+        return true
+    else
+        log:LogError("Attempted to cast unknown spell ID: " .. tostring(spellId))
+        return false
+    end
+end
+
+function Player:CastSpellByName(spellName,target)
+    target = target or "target"
+---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(spellName)
+    if spellInfo == nil then
+        log:LogError("Attempted to cast unknown spell: " .. tostring(spellName))
+        return false
+    end
+
+
+     self.LastCastSpell = spellInfo.spellID
+     log:LogCast(tostring(spellName))
+     if target.Type and target.Type == "Unit" then
+        br.SetFocus(target.guid)
+        CastSpellByName(spellInfo.name,"focus")
+        return true
+     else
+        br.CastSpellByName(spellInfo.name,target)
+        return true--
+     end
+end
+
+Player.CounterInterval = math.random(500,1000)/1000
+function Player:HandleCounter(counters,target)
+    target = target or br.ActivePlayer:TargetUnit()
+    local name, _, _, _, endTimeMs, _, _, _, _, _ = UnitCastingInfo(target.WoWGUID)
+    local TTF = (endTimeMs/1000 - GetTime())
+    
+    for _,counter in pairs(counters) do
+        if string.lower(target.name) == string.lower(counter.target) and
+           string.lower(name) == string.lower(counter.spell) and
+           not self:HasBuff(counter.auraIgnore) and
+           TTF < target:TTD() and
+           TTF < self.CounterInterval
+           then 
+                local targetName
+                if counter.spellTarget == "player" then
+                    targetName = "player"
+                else
+                    targetName = target.WoWGUID
+                end
+                if self:CanCastSpell(counter.counter,targetName) then
+                    log:Log("Casting Counter to " .. tostring(counter.spell) .. " on " .. tostring(counter.target))
+                    self:CastSpellById(counter.counter,targetName)
+                    -- once we cast refresh random Counter interval
+                    Player.CounterInterval = math.random(500,1000)/1000
+                    return true
+                end
+        end
+    end
+    return false
 end
 
 function Player:Enemies(yds)

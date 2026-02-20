@@ -73,10 +73,7 @@ end
 br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
-    if not br.api.IsSpellKnown(SpellId) then 
-        --print("Spell not known: ", SpellId)
-        return false 
-    end
+    if not br.api.IsSpellKnown(SpellId) then return false end
 
     ---@type SpellCooldownInfo
     local cooldownInfo = br.api.GetSpellCooldown(SpellId)
@@ -87,6 +84,8 @@ br.api.IsSpellCastable = function(SpellId,target)
     local spellInfo = C_Spell.GetSpellInfo(SpellId)
     local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
+
+   
     
     return  enabled and (startTime == 0 or duration == 0) and 
         isUsable and (inRange == nil or inRange) and 

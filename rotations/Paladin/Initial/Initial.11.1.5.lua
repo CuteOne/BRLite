@@ -4,14 +4,14 @@ local _,br=...
 ---------------------------------------------------------------------------
 -- Rotation Information, Required to determine if the rotation can be used
 ---------------------------------------------------------------------------
-local RotationName = "Stock Hunter TBC"
-local RotationShortName = "StockHunterTBC"
+local RotationName = "Stock Paladin Initial 11.1.5"
+local RotationShortName = "StockPaladinInitial1115"
 local RotationVersion = 1.0
 local RotationDescription = "A basic starter rotation"
-local RotationTOCLower = 20505
-local RotationTOCUpper = 20505
-local RotationClassName = "HUNTER"
-local RotationSpecializationID = 3  --Starter Spec ID
+local RotationTOCLower = 110105
+local RotationTOCUpper = 110105 
+local RotationClassName = "PALADIN"
+local RotationSpecializationID = 5  --Starter Spec ID
 
 
 
@@ -32,22 +32,16 @@ end
 --- we need to have them defined per rotation.
 --- ------------------------------------------------
 local SpellList = {
-    AutoShot = 75,
-   RaptorStrike = 2973,
-   RaptorStrikeRank2 = 14260,
-   AspectOfTheMonkey = 13163,
-   SerpentSting = 1978,
-   HuntersMark = 1130,
-   ArcaneShot=3044,
-   ConcussiveShot=5116,
-   AspectOfTheHawk=13165,
+    CrusaderStrike = 35395,
+    ShieldOfRighteousness = 53600,
+    Judgement = 20271,
+    HammerOfJustice = 853,
+    WordOfGlory = 85673,
+    Consecration = 26573,
 }
 
 local AuraList = {
-   AspectOfTheMonkey = 13163,
-   SerpentSting = 1978,
-   HuntersMark = 1130,
-   AspectOfTheHawk = 13165,
+
 }
 
 
@@ -63,6 +57,7 @@ local buffs = br.ActivePlayer.buffs
 local target = br.ActivePlayer:TargetUnit()
   
 local Mana
+local hp
 
 --------------------------------------------------------
 --- Pulse
@@ -73,21 +68,21 @@ local Mana
 local function Pulse()
 
     Mana = player:PowerPercent()
+    hp = player:AlternatePower(Enum.PowerType.HolyPower)
 
     if not player:IsAlive() or player:IsMounted() then return end
 
     if not player:IsBusy() then
-        if player:Level() < 10 then
-            if not buffs.up.AspectOfTheMonkey() and cast.able.AspectOfTheMonkey() then
-                return cast.AspectOfTheMonkey("player")
-            end
-        else
-            if not buffs.up.AspectOfTheHawk() then
-                if cast.able.AspectOfTheHawk() then
-                    return cast.AspectOfTheHawk("player")
-                end
-            end
-        end
+        --- SealOfCommand form 1
+        -- local ssf = GetShapeshiftForm()
+        -- if ssf ~= 1 and cast.able.SealOfCommand() then
+        --     return cast.SealOfCommand()
+        -- end
+
+        -- if player:HealthPercent() <= 85 and cast.able.WordOfGlory("player") then
+        --     return cast.WordOfGlory("player")
+        -- end
+        
     end
 
     if player.InCombat and UnitIsTapDenied("target") then
@@ -97,12 +92,12 @@ local function Pulse()
 
     -- Change our target if we're still in combat but don't have one
     if player.InCombat and not player:ValidTarget("target") then
-        player:TargetBest()
+        player:TargetClosestInMeleeRange(10)
     end
 
     --if we are too busy or still don't have a good attackable target then return
     if player:IsBusy() or 
-        not player:ValidTarget("target") or
+        (not player:ValidTarget("target") or UnitIsDeadOrGhost("target")) or
         not UnitCanAttack("player", "target") then return
     end
 
@@ -114,67 +109,27 @@ local function Pulse()
     -- In MOP we don't really get an InCombat until we engage
     -- so we're going to check and see if target is attackable
     if UnitCanAttack("player", "target") then
-        if not player:Pet() then
-            print("No pet found, trying to attack without pet")
-        else
-            local pet = player:Pet()
-            if pet and pet:GetTarget() ~= target then
-                br.PetAttack()
-            end                
-        end
-        player:CloseToRange(target, 35)
         player:EnsureFacing(target)
+        player:CloseToMelee(target)
+        
     end
 
-    if not br.Debuffs.up.HuntersMark(target) and cast.able.HuntersMark() then
-        return cast.HuntersMark()
+    --If we're not auto attacking then start
+    if not player:IsAuto() then return player:StartAutoAttack() end
+
+    if target:Distance() <= 10 and cast.able.Consecration() then 
+        return cast.Consecration()
     end
 
-     --If we're not auto attacking then start
-    if cast.inRange.AutoShot() then
-       if not br.api.IsAutoShot() then return br.api.StartAutoShot() end
-        end
-
-
-    if br.Debuffs.up.HuntersMark(target) and target:Distance() > 5 and  cast.able.ArcaneShot() then
-            return cast.ArcaneShot()
+    if cast.able.CrusaderStrike(target) then
+        return cast.CrusaderStrike(target)
     end
-    -- if cast.inRange.SerpentSting() then
-    --     if not br.Debuffs.up.SerpentSting(target) and cast.able.SerpentSting() and player.LastCastSpell ~= SpellList.SerpentSting then
-    --         return cast.SerpentSting()
-    --    end
-    -- end
-
-    -- if cast.inRange.ArcaneShot() then
-    --     if cast.able.ArcaneShot() then
-    --         return cast.ArcaneShot()
-    --     end
-    -- end
-
-   
-    if target:Distance() <= br.api.MeleeDistance then
-        if not player:IsAuto() then return player:StartAutoAttack() end
+    if cast.able.Judgement(target) then
+        return cast.Judgement(target)
     end
-    --br.StartAttack(target.WoWGUID)
-
-    --Defensive items while in combat
-    if player:HealthPercent() < 80 then
-   
+    if cast.able.ShieldOfRighteousness(target) and target:Distance() <= 5 then
+        return cast.ShieldOfRighteousness(target)
     end
-
-    if target:Distance() <= br.api.MeleeDistance then
-        if cast.able.RaptorStrike() then
-            return cast.lowestRank.RaptorStrike("target")
-        end
-    end
-
-
-
-
-    --Regular rotation stuff
-
-    
-
     
 
 end

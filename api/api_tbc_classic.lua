@@ -31,8 +31,10 @@ br.api.GetSpecializationName = function()
 end
 
 br.api.GetSpellCooldown = function(spellID)
-    local start, duration, enabled = GetSpellCooldown(spellID)
-    return start, duration, enabled
+    ---@type SpellCooldownInfo
+    local scdInfo = C_Spell.GetSpellCooldown(spellID)
+    --local start, duration, enabled = GetSpellCooldown(spellID)
+    return scdInfo
 end
 
 br.api.IsSpellCurrent = function(spellID)
@@ -66,20 +68,34 @@ end
 br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
-    if not br.api.IsSpellKnown(SpellId) then return false end
+    if not br.api.IsSpellKnown(SpellId) then 
+         --print("Spell not known:", SpellId)
+        return false 
+    end
 
-    local startTime, duration, enabled = br.api.GetSpellCooldown(SpellId)
-    local isUsable, notEnoughPower = IsUsableSpell(SpellId)
-    local inRange = IsSpellInRange(GetSpellInfo(SpellId), "target")
-    local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
-    
-    return  enabled == 1 and (startTime == 0 or duration == 0) and 
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+
+    ---@type SpellCooldownInfo
+    local scd = br.api.GetSpellCooldown(spellInfo.spellID)
+
+    local isUsable, notEnoughPower = IsUsableSpell(spellInfo.spellID)
+    local inRange = IsSpellInRange(GetSpellInfo(spellInfo.spellID), "target")
+    local isActiveOrQueued = C_Spell.IsCurrentSpell(spellInfo.spellID)
+    local castable =  scd.isEnabled and (scd.startTime == 0 or scd.duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
         not notEnoughPower and not isActiveOrQueued
+        if not castable then
+          -- print("Spell ID:", SpellId, "Cooldown:", scd.startTime, scd.duration, scd.isEnabled, "Is usable:", isUsable, "Not enough power:", notEnoughPower, "In range:", inRange, "Is active or queued:", isActiveOrQueued)        
+        end
+    return castable
 end
 
 br.api.IsSpellKnown = function(SpellId)
-    return IsSpellKnown(SpellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    if not spellInfo then return false end
+    return C_SpellBook.IsSpellKnown(spellInfo.spellID) -- IsSpellKnown(SpellId)
 end
 
 br.api.AutoShotOn = false
@@ -120,7 +136,24 @@ br.api.UnitPowerMax = function(...)
 end
 br.api.GetAuraDataByIndex = function(...) return C_UnitAuras.GetAuraDataByIndex(...) end
 br.api.GetPlayerAuraBySpellID = function(...) return C_UnitAuras.GetPlayerAuraBySpellID(...) end
+br.api.GetDebuffDataByIndex = function(...) return C_UnitAuras.GetDebuffDataByIndex(...) end
 br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end   
+br.api.UnitCastingInfo = function(...) return UnitCastingInfo(...) end
+br.api.UnitChannelInfo = function(...) return UnitChannelInfo(...) end
+br.api.GetSpellCooldown = function(spellID) 
+    --local scdInfo = C_Spell.GetSpellCooldown(spellID)
+     -- print("Spell ID:", spellID, "Cooldown Info:", scdInfo.startTime, scdInfo.duration, scdInfo.isEnabled)
+     local start, duration, enabled, modRate = GetSpellCooldown(spellID)
+     ---@type SpellCooldownInfo
+     local scdInfo = {
+        startTime = start,
+        duration = duration,
+        isEnabled = enabled == 1,
+        modRate = modRate,
+     }
+    return scdInfo
+
+end
 
 br.api.InteractDistance = 5
 br.api.MeleeDistance = 8.5

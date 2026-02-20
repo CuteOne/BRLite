@@ -64,7 +64,7 @@ local AuraList = {
     Windfury = 5401,
     FlameTongue = 5400,
     LashingFlames=334168,
-    EarthShield=383648,
+    EarthShield=974,
 }
 
 local TalentList = {
@@ -78,39 +78,6 @@ local TalentList = {
    
 }
 
-local ToggleOptions = {
-    ["RotationMode"] = 
-        {
-            ["values"] = {"On","Off"},
-            ["default"] = "On",
-            ["Icon"] = "Interface\\Icons\\ability_monk_roundhousekick",
-            ["tooltip"] = "Turn the Rotation On or Off",
-        },
-    ["AOEMode"] = {
-            ["values"] = {"On","Off"},
-            ["default"] = "Off",
-            ["Icon"] = "Interface\\Icons\\aability_monk_cranekick",
-            ["tooltip"] = "Turn AOE Mode On or Off",
-        },
-}
-
------------------------------------------------------
---- Create Toggles
---- Creates toggle buttons that will appear in the UI
---- When the rotation is active
-------------------------------------------------------
-local function CreateToggles()
-    --No toggles for this basic rotation
-end
-
------------------------------------------------------
---- Create options
---- Creates options that will appear in the configuration
---- UI when the rotation is selected
-------------------------------------------------------
-local function CreateOptions()
-    --No options for this basic rotation
-end
 
 ---@type br.Logging
 local log    = br.Logging
@@ -126,13 +93,7 @@ local mana = br.ActivePlayer:Power()
 local meleeRange = false
 
 
-local function boolNumeric(value)
-    if value then
-        return 1
-    else
-        return 0
-    end
-end
+
 
 local function Opener()
     --flame_shock,if=!ticking
@@ -224,8 +185,9 @@ local function Pulse()
         if not buffs.up.Skyfury("player") and cast.able.Skyfury() then
             return cast.Skyfury("player")   
         end
-        --if player:EnsureMHWeaponEnchant(SpellList.WindfuryWeapon, AuraList.Windfury) then return true end
-        if player:EnsureMHWeaponEnchant(SpellList.FlameTongueWeapon, AuraList.FlameTongue) then return true end
+        if player:EnsureMHWeaponEnchant(SpellList.WindfuryWeapon, AuraList.Windfury) then return true end
+        if player:EnsureOHWeaponEnchant(SpellList.FlameTongueWeapon, AuraList.FlameTongue) then return true end
+       
         if not buffs.up.EarthShield("player") and cast.able.EarthShield() then
             return cast.EarthShield("player")
         end
@@ -248,163 +210,238 @@ local function Pulse()
     
     end
 
-    if player.InCombat and not player:ValidTarget("target")   then
-        player:TargetClosestInMeleeRange()
-        return
-    end
-
-    if player:IsBusy() or 
-        not player:ValidTarget("target") or 
-        not UnitCanAttack("player","target")  then return   
+     --Check for a valid Target if not find one
+    if player.InCombat and (player:TargetUnit() == nil or UnitIsDeadOrGhost("target"))  then
+        log:Log("No valid target, selecting closest in melee range")
+        player:TargetClosestInMeleeRange(15)
     end
 
     --Final validations
     if not UnitCanAttack("player","target") then return end
     target = player:TargetUnit()
-    if not target or UnitIsDeadOrGhost("target") then return end
-    meleeRange = target.Distance() <= 7.5
+    if not target or UnitIsDeadOrGhost("target") then
+        --log:Log("Selected target is not valid after selection, returning to rotation manager")
+         return 
+   end
+    meleeRange = target:Distance() <= 7.5
 
-    
+    -- if target:Distance() > 6 then
+    --     print("Target Distance: " .. tostring(target:Distance()) )
+    -- end
 
     
      player:EnsureFacing(target)
      player:CloseToMelee(target)
     
-    
-    if player:CombatTime() < 15 then
-        Opener()
-        return
-    end
 
 
     if not player:IsAuto() then return player:StartAutoAttack() end
 
-    --	primordial_storm,if=(buff.maelstrom_weapon.stack>=10|buff.primordial_storm.remains<=4&buff.maelstrom_weapon.stack>=5)
-    if (buffs.stacks.MaelstromWeapon() >= 10 
-        or (buffs.up.PrimordialStorm() and buffs.remaining.PrimordialStorm() <= 4 and buffs.stacks.MaelstromWeapon() >= 5)
-        ) then
-        if cast.able.PrimordialStorm() then
-            return cast.PrimordialStorm()
-        end
-    end
 
-    --feral_spirit,if=(cooldown.doom_winds.remains>25|cooldown.doom_winds.remains<=5)
-    if (cast.cdRemains.DoomWinds() > 25 
-        or cast.cdRemains.DoomWinds() <= 5) then
-        if cast.able.FeralSpirit() then
-            return cast.FeralSpirit()
-        end
-    end
+     if cast.able.DoomWinds() then
+        return cast.DoomWinds()
+     end
+     --primordial_wave,if=dot.flame_shock.ticking&(raid_event.adds.in>action.primordial_wave.cooldown|raid_event.adds.in<6)
+     if br.Debuffs.up.FlameShock(target) and cast.able.PrimordialWave() then
+        return cast.PrimordialWave()
+     end
 
-   if cast.able.SurgingTotem() then
-        return cast.atTargetGround.SurgingTotem(target)
-    end
-
-    --doom_winds
-    if cast.inRange.Stormstrike() then
-        -- Melee Range Abilities
-        if cast.able.DoomWinds() then
-            return cast.DoomWinds()
-        end
-    end
-
-    
-    --	stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0
-    if buffs.up.DoomWinds() or buffs.stacks.Stormblast() > 0 then
-        if cast.able.Stormstrike() then
-            return cast.Stormstrike()
-        end
-    end
-
-    --elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
-    if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
-        if cast.able.ElementalBlast() then
+     --elemental_blast,if=((!talent.overflowing_maelstrom.enabled&buff.maelstrom_weapon.stack>=5)|(buff.maelstrom_weapon.stack>=9))
+        if (((not player:HasTalent(TalentList.OverflowingMaelstrom) and buffs.stacks.MaelstromWeapon() >= 5) or (buffs.stacks.MaelstromWeapon() >= 9)) and cast.able.ElementalBlast()) then
             return cast.ElementalBlast()
         end
-    end
-    --lightning_bolt,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
-    if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
-        if cast.able.LightningBolt() then
-            return cast.LightningBolt()
-        end
-    end
 
-    --flame_shock,if=!ticking
-    if not br.Debuffs.up.FlameShock(target) then
-        if cast.able.FlameShock() then
-            return cast.FlameShock("target")
-        end
-    end
+    --lightning_bolt,if=buff.maelstrom_weapon.stack>=9
+    if buffs.stacks.MaelstromWeapon() >= 9 and cast.able.LightningBolt() then
+        return cast.LightningBolt()
+     end
 
-    --primordial_wave,if=dot.flame_shock.ticking
-    if br.Debuffs.up.FlameShock(target) then
-        if cast.able.PrimordialWave() then
-            return cast.PrimordialWave()
-        end
-    end
-
-    --stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0
-    if buffs.up.DoomWinds() or buffs.stacks.Stormblast() > 0 then
-        if cast.able.Stormstrike() then
-            return cast.Stormstrike()
-        end
-    end
-
-    --stormstrike,if=charges_fractional>=1.8
-    if cast.charges.Stormstrike() >= 1.8 then
-        if cast.able.Stormstrike() then
-            return cast.Stormstrike()
-        end
-    end
-
-
-    --lava_lash,if=(talent.lashing_flames.enabled&(debuff.lashing_flames.remains<2))
-    if player:HasTalent(TalentList.LashingFlames) and 
-        (br.Debuffs.remaining.LashingFlames(target) < 2) then
+     --lava_lash,if=(buff.hot_hand.up&(buff.ashen_catalyst.stack=buff.ashen_catalyst.max_stack))|(dot.flame_shock.remains<=2&!talent.voltaic_blaze.enabled&talent.molten_assault.enabled)|(talent.lashing_flames.enabled&(debuff.lashing_flames.down))
+     --print("ashen catalyst max stacks: " .. tostring(buffs.maxStacks.AshenCatalyst()) )
+     if (buffs.up.HotHands() and (buffs.stacks.AshenCatalyst() == 8)) or br.Debuffs.remaining.FlameShock(target) <= 2 then
         if cast.able.LavaLash() then
             return cast.LavaLash()
         end
-    end
+     end
 
-    --stormstrike
+     --stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0
+     if buffs.up.DoomWinds() or buffs.stacks.Stormblast() > 0 then
+        if cast.able.Stormstrike() then
+            return cast.Stormstrike()
+        end
+     end
+
+     --lava_lash,if=buff.hot_hand.up
+        if buffs.up.HotHands() then
+            if cast.able.LavaLash() then
+                return cast.LavaLash()
+            end
+        end
+
     if cast.able.Stormstrike() then
         return cast.Stormstrike()
     end
 
-    --elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
-    if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
-        if cast.able.ElementalBlast() then
-            return cast.ElementalBlast()
+     --elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+        if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+            if cast.able.ElementalBlast() then
+                return cast.ElementalBlast()
+            end
         end
-    end
 
-    --lightning_bolt,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
-    if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
-        if cast.able.LightningBolt() then
-            return cast.LightningBolt()
+        --	lightning_bolt,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+        if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+            if cast.able.LightningBolt() then
+                return cast.LightningBolt()
+            end
         end
-    end
 
-    --lava_lash,if=talent.elemental_assault.enabled&talent.molten_assault.enabled&dot.flame_shock.ticking
-    if player:HasTalent(TalentList.ElementalAssault) and 
-        player:HasTalent(TalentList.MoltenAssault) and 
-        br.Debuffs.up.FlameShock(target) then
-        if cast.able.LavaLash() then
-            return cast.LavaLash()
+        --crash_lightning
+        if cast.able.CrashLightning() then
+            return cast.CrashLightning()
         end
-    end
 
-    if cast.able.CrashLightning() then
-        return cast.CrashLightning()
-    end
+        --earth_elemental
+        if cast.able.EarthElemental() then
+            return cast.EarthElemental()
+        end
 
-    if cast.able.EarthElemental() then
-        return cast.EarthElemental()
-    end
+        --flame_shock
+        if cast.able.FlameShock() then
+            return cast.FlameShock()
+        end
 
-    if cast.able.FlameShock() then
-        return cast.FlameShock("target")
-    end
+
+--     --	primordial_storm,if=(buff.maelstrom_weapon.stack>=10|buff.primordial_storm.remains<=4&buff.maelstrom_weapon.stack>=5)
+--     if (buffs.stacks.MaelstromWeapon() >= 10 
+--         or (buffs.up.PrimordialStorm() and buffs.remaining.PrimordialStorm() <= 4 and buffs.stacks.MaelstromWeapon() >= 5)
+--         ) then
+--         if cast.able.PrimordialStorm() then
+--             return cast.PrimordialStorm()
+--         end
+--     end
+
+--     --feral_spirit,if=(cooldown.doom_winds.remains>25|cooldown.doom_winds.remains<=5)
+--     if (cast.cdRemains.DoomWinds() > 25 
+--         or cast.cdRemains.DoomWinds() <= 5) then
+--         if cast.able.FeralSpirit() then
+--             return cast.FeralSpirit()
+--         end
+--     end
+
+--    if cast.able.SurgingTotem() then
+--         return cast.atTargetGround.SurgingTotem(target)
+--     end
+
+--     --doom_winds
+--     if cast.inRange.Stormstrike() then
+--         -- Melee Range Abilities
+--         if cast.able.DoomWinds() then
+--             return cast.DoomWinds()
+--         end
+--     end
+
+    
+--     --	stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0
+--     if buffs.up.DoomWinds() or buffs.stacks.Stormblast() > 0 then
+--         if cast.able.Stormstrike() then
+--             return cast.Stormstrike()
+--         end
+--     end
+
+--     --elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+--     if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+--         if cast.able.ElementalBlast() then
+--             return cast.ElementalBlast()
+--         end
+--     end
+--     --lightning_bolt,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+--     if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+--         if cast.able.LightningBolt() then
+--             return cast.LightningBolt()
+--         end
+--     end
+
+--     --flame_shock,if=!ticking
+--     if not br.Debuffs.up.FlameShock(target) then
+--         if cast.able.FlameShock() then
+--             return cast.FlameShock("target")
+--         end
+--     end
+
+--     --primordial_wave,if=dot.flame_shock.ticking
+--     if br.Debuffs.up.FlameShock(target) then
+--         if cast.able.PrimordialWave() then
+--             return cast.PrimordialWave()
+--         end
+--     end
+
+--     --stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0
+--     if buffs.up.DoomWinds() or buffs.stacks.Stormblast() > 0 then
+--         if cast.able.Stormstrike() then
+--             return cast.Stormstrike()
+--         end
+--     end
+
+--     --stormstrike,if=charges_fractional>=1.8
+--     if cast.charges.Stormstrike() >= 1.8 then
+--         if cast.able.Stormstrike() then
+--             return cast.Stormstrike()
+--         end
+--     end
+
+
+--     --lava_lash,if=(talent.lashing_flames.enabled&(debuff.lashing_flames.remains<2))
+--     if player:HasTalent(TalentList.LashingFlames) and 
+--         (br.Debuffs.remaining.LashingFlames(target) < 2) then
+--         if cast.able.LavaLash() then
+--             return cast.LavaLash()
+--         end
+--     end
+
+--     --stormstrike
+--     if cast.able.Stormstrike() then
+--         return cast.Stormstrike()
+--     end
+
+--     --elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+--     if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+--         if cast.able.ElementalBlast() then
+--             return cast.ElementalBlast()
+--         end
+--     end
+
+--     --lightning_bolt,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up
+--     if buffs.stacks.MaelstromWeapon() >= 5 and not buffs.up.PrimordialStorm() then
+--         if cast.able.LightningBolt() then
+--             return cast.LightningBolt()
+--         end
+--     end
+
+--     --lava_lash,if=talent.elemental_assault.enabled&talent.molten_assault.enabled&dot.flame_shock.ticking
+--     if player:HasTalent(TalentList.ElementalAssault) and 
+--         player:HasTalent(TalentList.MoltenAssault) and 
+--         br.Debuffs.up.FlameShock(target) then
+--         if cast.able.LavaLash() then
+--             return cast.LavaLash()
+--         end
+--     end
+
+--     if cast.able.CrashLightning() then
+--         return cast.CrashLightning()
+--     end
+
+--     if cast.able.EarthElemental() then
+--         return cast.EarthElemental()
+--     end
+
+--     if cast.able.FlameShock() then
+--         return cast.FlameShock("target")
+--     end
+
+--     if cast.able.Stormstrike() then
+--         return cast.Stormstrike()
+--     end
 
 
 
@@ -425,12 +462,8 @@ local rotation = br.RotationBase:Register(
     SpellList
 )
 if rotation then
-    rotation.CheckRequirements = CheckRequirements
-    rotation.CreateOptions = CreateOptions  
-    rotation.CreateToggles = CreateToggles
     rotation.Pulse = Pulse
     rotation.SpellList = SpellList or {}
-    rotation.ToggleOptions = ToggleOptions or {}
     br.ActivePlayer:BuffSetup(AuraList)
     br.Debuffs:AuraSetup(AuraList)
 end 

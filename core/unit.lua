@@ -170,6 +170,26 @@ function Unit:IsInterruptable()
     return false
 end
 
+function Unit:IsCasting(spellName)
+    local name, displayName, textureID, startTimeMs, endTimeMs, isTradeskill, castID, notInterruptible, castingSpellID, castBarID = UnitCastingInfo(self.WoWGUID)
+    if spellName and not type(spellName) == "number" then
+        if name and string.lower(name) == string.lower(spellName) then
+            return true
+        end
+        return false
+    end
+    if spellName and type(spellName) == "number" then
+        if castingSpellID and castingSpellID == spellName then
+            return true
+        end
+        return false
+    end
+    if name then
+        return true
+    end
+    return false
+end
+
 function Unit:Summoner()
     local summoner = nil
     if br.clientTOC == 110105 then

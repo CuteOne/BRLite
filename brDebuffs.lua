@@ -50,7 +50,7 @@ function auras:AuraSetup(AuraList)
                 ---@type AuraData?
                 local aura = br.api.GetDebuffDataByIndex(unit.WoWGUID,i,"HARMFUL")
                 if aura and aura.spellId == auraID then
-                    return aura.expirationTime - GetTime()
+                    return aura.expirationTime - GetTime() 
                 end
             end
             return 0

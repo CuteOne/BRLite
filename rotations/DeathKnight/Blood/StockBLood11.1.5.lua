@@ -33,6 +33,8 @@ local SpellList = {
     Marrowrend = 195182,
     RaiseDead = 46585,
     DeathGrip = 49576,
+      DeathsAdvance = 48265,
+
 
 
 }
@@ -57,6 +59,9 @@ local AuraList = {
     Bonestorm = 194844,
     ReaperOfSouls = 469172,
     DeathGrip = 51399,
+      DeathsAdvance = 48265,
+
+    
 
 }
 
@@ -70,6 +75,16 @@ local HeroTalentList = {
 local TalentList = {
     ShatteringBone=377640,
    
+}
+
+--Specific counters to target's spells/abilities
+local Counters = {
+    {   target="Rank Overseer",
+        spell="Wild Wallop",
+        counter=SpellList.DeathsAdvance,
+        auraIgnore=AuraList.DeathsAdvance,
+        spellTarget="player",
+     },
 }
 
 
@@ -154,9 +169,9 @@ local function Pulse()
     if Defensive() then return true end
 
     --Check for a valid Target if not find one
-    if player.InCombat and player:TargetUnit() == nil  then
+    if player.InCombat and (player:TargetUnit() == nil or UnitIsDeadOrGhost("target"))  then
         log:Log("No valid target, selecting closest in melee range")
-        player:TargetClosestInMeleeRange()
+        player:TargetClosestInMeleeRange(15)
     end
 
     --Testing Instance Priority Targeting
@@ -178,6 +193,19 @@ local function Pulse()
         if cast.able.MindFreeze()  then
             return cast.MindFreeze("target")    
         end
+    end
+
+     if target and target:IsCasting() then
+        if player:HandleCounter(Counters,target) then return true end
+        -- --See if the cast is one that we want to use Death's Advance for
+        -- local castName,TTF = target:CastNameAndTTF()
+        -- if castName then
+        --     --Make sure we're not going to waste the DA by using it on a target that will die before the cast finishes
+        --     if requiresDeathsAdvance(castName) and target:TTD() > TTF then
+        --         log:Log("Using Death's Advance to prevent " .. castName .. " from " .. target.name)
+        --         return cast.DeathsAdvance("player")
+        --     end
+        -- end
     end
 
     --Look for any likely unengaged targets within 30 yards to pull, if pull mode is enabled
@@ -253,10 +281,15 @@ local function Pulse()
     if buffs.up.DancingRuneWeapon() and cast.able.BloodBoil("player") then
         return cast.BloodBoil("player")
     end
+
+    -------------------------------------------------------------------
+    -- Soul Reaper. Use on target below 35% 
     if buffs.up.ReaperOfSouls() and cast.cdRemains.DancingRuneWeapon() > 1 then
         if cast.able.SoulReaper() then
             return cast.SoulReaper()
         end
+    else
+        --print("ROS CD Remains: " .. cast.cdRemains.DancingRuneWeapon())
     end
 
     if cast.able.DeathStrike() then

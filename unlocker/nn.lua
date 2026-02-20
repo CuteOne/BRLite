@@ -7,6 +7,11 @@ br = br or {}
 ---@type br.Logging
 br.Logging = br.Logging or {}
 
+local function HardwareActionWrapper(func,...)
+    nn.UpdateLastHardwareAction()
+    return nn.Unlock(func,...)
+end
+
 br.RequireFile = function(path,...)
     return nn:Require(path,...)
 end
@@ -59,7 +64,7 @@ br.ListFiles                    = nn.ListFiles
 br.UnitTarget                  = nn.UnitTarget
 br.ObjectPointer               = nn.ObjectPointer
 br.ClickPosition = nn.ClickPosition
-br.ClickToMove = nn.ClickToMove
+br.ClickToMove = function(...) return HardwareActionWrapper("ClickToMove",...) end
 br.ObjectAnimationFlag        = nn.ObjectAnimationFlag
 br.SendMovementHeartbeat     = nn.SendMovementHeartbeat
 br.UnitTarget = nn.UnitTarget
@@ -67,43 +72,44 @@ br.GetFocus = nn.GetFocus
 br.LibDraw = nn.Utils.Draw:New()
 br.ObjectField = nn.ObjectField
 br.ObjectFlags = nn.ObjectFlags
+br.UpdateLastHardwareAction = nn.UpdateLastHardwareAction
 
 
 
-br.TargetUnit               =  function(...) return nn.Unlock("TargetUnit",...) end
-br.AttackTarget             =  function() return nn.Unlock("AttackTarget") end
-br.CancelShapeshiftForm     =  function() return nn.Unlock("CancelShapeshiftForm") end
-br.CancelUnitBuff           =  function(...) return nn.Unlock("CancelUnitBuff",...) end
-br.CastPetAction            =  function(...) return nn.Unlock("CastPetAction",...) end
-br.CastShapeSiftForm        =  function(...) return nn.Unlock("CastShapeSiftForm",...) end
-br.CastSpell                =  function(...) return nn.Unlock("CastSpell",...) end
-br.CastSpellByID            =  function(...) return nn.Unlock("CastSpellByID",...) end
-br.CastSpellByName          =  function(...) return nn.Unlock("CastSpellByName",...) end
-br.ClearTarget              =  function() return nn.Unlock("ClearTarget") end
---br.ClickPosition            =  function(...) return nn.Unlock("ClickPosition",...) end  
-br.FocusUnit                =  function(...) return nn.Unlock("FocusUnit",...) end
-br.ForceQuit                =  function() return nn.Unlock("ForceQuit") end
-br.Logout                   =  function() return nn.Unlock("Logout") end
-br.PetAssistMode            =  function() return nn.Unlock("PetAssistMode") end
-br.PetAttack                =  function() return nn.Unlock("PetAttack") end
-br.PetDefensiveAssistMode   =  function() return nn.Unlock("PetDefensiveAssistMode") end
-br.PetDefensiveMode         =  function() return nn.Unlock("PetDefensiveMode") end
-br.PetFollow                =  function() return nn.Unlock("PetFollow") end
-br.PetPassiveMode           =  function() return nn.Unlock("PetPassiveMode") end
-br.PetStopAttack            =  function() return nn.Unlock("PetStopAttack") end
-br.PetWait                  =  function() return nn.Unlock("PetWait") end
---br.RunMacroText             =  function(...) return nn.Unlock("RunMacroText",...) end
-br.RunMacro                 =  function(...) return nn.Unlock("RunMacro",...) end
-br.StartAttack              =  function(...) return nn.Unlock("StartAttack",...) end
-br.SpellStopCasting         =  function() return nn.Unlock("SpellStopCasting") end
-br.SpellStopTargeting       =  function() return nn.Unlock("SpellStopTargeting") end
-br.SpellTargetUnit          =  function(...) return nn.Unlock("SpellTargetUnit",...) end
-br.UseContainerItem         =  function(...) return nn.Unlock("UseContainerItem",...) end
-br.UseItemByName            =  function(...) return nn.Unlock("UseItemByName",...) end
-br.TargetNearestEnemy       =  function(...) return nn.Unlock("TargetNearestEnemy",...) end
-br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
-br.FollowUnit               = function(...) return nn.Unlock("FollowUnit",...) end
-br.ConfirmBindOnUse         = function() return nn.Unlock("ConfirmBindOnUse") end
+br.TargetUnit               = function(...)  return HardwareActionWrapper("TargetUnit",...) end
+br.AttackTarget             =  function() return HardwareActionWrapper("AttackTarget") end
+br.CancelShapeshiftForm     =  function() return HardwareActionWrapper("CancelShapeshiftForm") end  
+br.CancelUnitBuff           =  function(...) return HardwareActionWrapper("CancelUnitBuff",...) end
+br.CastPetAction            =  function(...) return HardwareActionWrapper("CastPetAction",...) end
+br.CastShapeSiftForm        =  function(...) return HardwareActionWrapper("CastShapeSiftForm",...) end
+br.CastSpell                =  function(...) return HardwareActionWrapper("CastSpell",...) end
+br.CastSpellByID            =  function(...) return HardwareActionWrapper("CastSpellByID",...) end
+br.CastSpellByName          =  function(...) return HardwareActionWrapper("CastSpellByName",...) end
+br.ClearTarget              =  function() return HardwareActionWrapper("ClearTarget") end
+br.FocusUnit                =  function(...) return HardwareActionWrapper("FocusUnit",...) end
+br.ForceQuit                =  function() return HardwareActionWrapper("ForceQuit") end
+br.Logout                   =  function() return HardwareActionWrapper("Logout") end
+br.PetAssistMode            =  function() return HardwareActionWrapper("PetAssistMode") end
+br.PetAttack                =  function() return HardwareActionWrapper("PetAttack") end
+br.PetDefensiveAssistMode   =  function() return HardwareActionWrapper("PetDefensiveAssistMode") end
+br.PetDefensiveMode         =  function() return HardwareActionWrapper("PetDefensiveMode") end
+br.PetFollow                =  function() return HardwareActionWrapper("PetFollow") end
+br.PetPassiveMode           =  function() return HardwareActionWrapper("PetPassiveMode") end
+br.PetStopAttack            =  function() return HardwareActionWrapper("PetStopAttack") end
+br.PetWait                  =  function() return HardwareActionWrapper("PetWait") end
+br.RunMacro                 =  function(...) return HardwareActionWrapper("RunMacro",...) end
+br.StartAttack              =  function(...) return HardwareActionWrapper("StartAttack",...) end
+br.SpellStopCasting         =  function() return HardwareActionWrapper("SpellStopCasting") end
+br.SpellStopTargeting       =  function() return HardwareActionWrapper("SpellStopTargeting") end
+br.SpellTargetUnit          =  function(...) return HardwareActionWrapper("SpellTargetUnit",...) end
+br.UseContainerItem         =  function(...) return HardwareActionWrapper("UseContainerItem",...) end
+br.UseItemByName            =  function(...) return HardwareActionWrapper("UseItemByName",...) end
+br.TargetNearestEnemy       =  function(...) return HardwareActionWrapper("TargetNearestEnemy",...) end
+br.ConfirmBindOnUse         = function() return HardwareActionWrapper("ConfirmBindOnUse") end
+br.FollowUnit               = function(...) return HardwareActionWrapper("FollowUnit",...) end
+br.ConfirmBindOnUse         = function() return HardwareActionWrapper("ConfirmBindOnUse") end
+
+--local draw = nn.Utils.Draw:New()
 
 br.unwrap = function(...)
     if br.clientTOC < 120000 then

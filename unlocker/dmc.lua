@@ -193,7 +193,11 @@ for i = 1, #br.StandarApis do
 end
 
 br.unwrap = function(...)
-    return dmc.secretunwrap(...)
+    if issecretvalue(...) then
+        return dmc.secretunwrap(...)
+    else
+        return ...
+    end
 end
 
 br.api.GetUnitGUID = function(unitId)

@@ -70,7 +70,11 @@ end
 br.api.IsSpellCastable = function(SpellId,target)
     target = target or "target"
     if br.ActivePlayer:IsCasting() or br.ActivePlayer:IsChanneling() then return false end
-    if not br.api.IsSpellKnown(SpellId) then return false end
+    if not br.api.IsSpellKnown(SpellId) then 
+        print("Spell ID ", SpellId, " is not known by the player.")
+        return false 
+
+        end
 
     ---@type SpellCooldownInfo
     local cooldownInfo = br.api.GetSpellCooldown(SpellId)
@@ -79,6 +83,11 @@ br.api.IsSpellCastable = function(SpellId,target)
     local spellInfo = C_Spell.GetSpellInfo(SpellId)
     local inRange = C_Spell.IsSpellInRange(spellInfo.spellID, "target")
     local isActiveOrQueued = C_Spell.IsCurrentSpell(SpellId)
+
+    --  if spellInfo.name == "Stormstrike" then
+    --     print("Cooldown info for Stormstrike: ", cooldownInfo)
+    --     print("IsUsable: ", isUsable, " NotEnoughPower: ", notEnoughPower, " InRange: ", inRange, " IsActiveOrQueued: ", isActiveOrQueued)
+    -- end
     
     return  cooldownInfo.isEnabled and (cooldownInfo.startTime == 0 or cooldownInfo.duration == 0) and 
         isUsable and (inRange == nil or inRange) and 
@@ -86,7 +95,14 @@ br.api.IsSpellCastable = function(SpellId,target)
 end
 
 br.api.IsSpellKnown = function(SpellId)
-    return IsSpellKnown(SpellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    if not spellInfo then return false end
+    if C_SpellBook and C_SpellBook.IsSpellInSpellBook then
+        return C_SpellBook.IsSpellInSpellBook(spellInfo.spellID)
+    else
+        return IsSpellKnownOrOverridesKnown(spellInfo.spellID)
+    end
 end
 
 br.api.AutoShotOn = false
@@ -133,10 +149,11 @@ end
 
 br.api.GetAuraDataByIndex = function(...) return C_UnitAuras.GetAuraDataByIndex(...) end
 br.api.GetPlayerAuraBySpellID = function(...) return C_UnitAuras.GetPlayerAuraBySpellID(...) end
+--br.api.GetAuraDataBySpellId = function(...) return C_UnitAuras.GetAuraDataBySpellId(...) end
 br.api.FindAuraByName = function(...) return AuraUtil.FindAuraByName(...) end   
 br.api.UnitCastingInfo = function(...) return UnitCastingInfo(...) end
 br.api.UnitChannelInfo = function(...) return UnitChannelInfo(...) end
-
+br.api.GetSpellCharges = function(...) return C_Spell.GetSpellCharges(...) end
 
 br.api.IsValidTarget = function(unit)
     if not unit then
