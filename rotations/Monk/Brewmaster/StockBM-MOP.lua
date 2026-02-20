@@ -35,11 +35,15 @@ local SpellList = {
     StanceOfTheSturdyOx = 115069,
     StanceOfTheFierceTiger = 115070,
     KegSmash = 121253,
+    LegacyOfTheEmperor = 115921,
+    Provoke = 115546,
+    Clash = 122057,
     
 }
 
 local AuraList = {
-    
+ LegacyOfTheEmperor = 117666,  
+ Provoke = 116189,
 }
 
 
@@ -76,6 +80,11 @@ local function Pulse()
     chiDeficit = br.ActivePlayer:AlternatePowerDeficit(Enum.PowerType.Chi)
 
     if not player:IsAlive() or player:IsMounted() then return end
+
+    if not player:IsBusy() and not buffs.up.LegacyOfTheEmperor() and cast.able.LegacyOfTheEmperor("player") then
+        return cast.LegacyOfTheEmperor("player")
+    end
+
      -- Change our target if we're still in combat but don't have one
     if player.InCombat and not player:ValidTarget("target") then
         player:TargetBest()
@@ -94,6 +103,22 @@ local function Pulse()
      if UnitCanAttack("player", "target") then
         player:EnsureFacing(target)
         player:CloseToMelee(target)
+    end
+    if target:Distance() > 10 and target:Distance() <= 40 then
+        if cast.able.Clash() then
+            player:StopMoving()
+            return cast.Clash()
+        else            
+            if not br.Debuffs.up.Provoke(target) and cast.inRange.Provoke() then
+                return cast.Provoke()
+            end            
+        end
+    end
+
+     if not player:IsAuto() then player:StartAutoAttack() return end
+
+     if cast.able.KegSmash() then
+        return cast.KegSmash()
     end
 
     if not player:IsAuto() then player:StartAutoAttack() return end

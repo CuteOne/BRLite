@@ -167,5 +167,12 @@ br.api.IsValidTarget = function(unit)
     return true
 end
 
+br.api.UnitCanAttack = function(...)
+    return UnitCanAttack(...)
+end
+
+br.api.UnitIsEnemy = function(...)
+    return UnitIsEnemy(...)
+end
 
 Log:Log("Initializing TBC Classic API")

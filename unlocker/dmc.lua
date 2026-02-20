@@ -50,7 +50,6 @@ br.ObjectSkinnable = dmc.UnitIsSkinnable
 br.ObjectSummoner = dmc.UnitSummonedBy
 br.ObjectType = dmc.ObjectType
 br.ObjectYaw = dmc.UnitFacing
-br.PlayerTarget = dmc.UnitTarget("player")
 br.ScreenToWorld = dmc.ScreenToWorld
 br.SetMouseOver = dmc.SetMouseOverObject
 br.SetPlayerFacing = dmc.FaceDirection
@@ -205,6 +204,8 @@ br.api.GetUnitGUID = function(unitId)
 end
 
 setfenv(1, br.apis)
+
+br.UpdateLastHardwareAction = function() return nil end
 
 
 br.Logging:Log("DMC Unlocker Loaded")

@@ -431,7 +431,7 @@ function Player:TargetRange()
 end
 
 function Player:TargetUnit()
-    local myTarget = br.PlayerTarget() 
+    local myTarget = br.UnitTarget("player")
     return br.ObjectManager.Units[myTarget]
 end
 
@@ -688,18 +688,18 @@ function Player:TargetClosestInMeleeRange(yds)
         local isValidTarget = br.api.IsValidTarget(v)
         local isAlive = v:IsAlive()
         local isTargetingPlayer = v:IsTargetingPlayer()
-        local CanAttack = UnitCanAttack("player",v.WoWGUID)
-        local IsEnemy = UnitIsEnemy("player",v.WoWGUID)
+        local CanAttack = br.api.UnitCanAttack("player",v.WoWGUID)
+        local IsEnemy = br.api.UnitIsEnemy("player",v.WoWGUID)
         if v:Distance() <= yds then
-            --print("Target: " .. tostring(v.name) .. " Valid: " .. tostring(isValidTarget) .. " Alive: " .. tostring(isAlive) .. " TargetingPlayer: " .. tostring(isTargetingPlayer) .. " CanAttack: " .. tostring(CanAttack) .. " IsEnemy: " .. tostring(IsEnemy))
+           -- print("Target: " .. tostring(v.name) .. " Valid: " .. tostring(isValidTarget) .. " Alive: " .. tostring(isAlive) .. " TargetingPlayer: " .. tostring(isTargetingPlayer) .. " CanAttack: " .. tostring(CanAttack) .. " IsEnemy: " .. tostring(IsEnemy))
         end 
 
         if  br.api.IsValidTarget(v)
         and v:Distance() <= yds and
             v:IsAlive() and
             not v:IsPlayersControl() and
-            UnitCanAttack("player",v.WoWGUID) and
-            UnitIsEnemy("player",v.WoWGUID) and 
+            br.api.UnitCanAttack("player",v.WoWGUID) and
+            br.api.UnitIsEnemy("player",v.WoWGUID) and 
             v:IsTargetingPlayer()
         then
             local distance = v:Distance()
@@ -772,6 +772,16 @@ function Player:EnsureFacing(unit)
         local a1,a2 = br.Geometry:GetAnglesBetweenObjects(self,unit)
         br.SetPlayerFacing(a1)
         br.SendMovementHeartbeat()
+        return true
+    end
+    return false
+end
+
+function Player:StopMoving()
+    if not br.DoMovement then return false end
+    if self:IsMoving() then
+        br.ClickToMove(br.ObjectLocation(self.guid)) --Stop moving
+        br.SendMovementHeartbeat()      
         return true
     end
     return false

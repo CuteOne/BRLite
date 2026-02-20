@@ -135,4 +135,12 @@ end
 
 br.api.GetDebuffDataByIndex = function(...) return C_UnitAuras.GetDebuffDataByIndex(...) end
 
+br.api.UnitCanAttack = function(...)
+    return UnitCanAttack(...)
+end
+
+br.api.UnitIsEnemy = function(...)
+    return UnitIsEnemy(...)
+end
+
 Log:Log("Initializing Classic MOP ERA api")

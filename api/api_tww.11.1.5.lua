@@ -189,4 +189,12 @@ br.UnitTarget = function(unitId)
      --Log:Log("11.1.5 API UnitTarget called with args: " .. tostring(unitId))
     return br.ObjectField(unitId,0x1950,5)
 end
+
+br.api.UnitCanAttack = function(...)
+    return UnitCanAttack(...)
+end
+
+br.api.UnitIsEnemy = function(...)
+    return UnitIsEnemy(...)
+end
 Log:Log("Initializing TWW 11.1.5 api")

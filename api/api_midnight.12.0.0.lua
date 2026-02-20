@@ -93,7 +93,14 @@ br.api.IsSpellCastable = function(SpellId,target)
 end
 
 br.api.IsSpellKnown = function(SpellId)
-    return C_SpellBook.IsSpellInSpellBook(SpellId)
+    ---@type SpellInfo
+    local spellInfo = C_Spell.GetSpellInfo(SpellId)
+    if not spellInfo then return false end
+    if C_SpellBook and C_SpellBook.IsSpellInSpellBook then
+        return C_SpellBook.IsSpellInSpellBook(spellInfo.spellID)
+    else
+        return IsSpellKnownOrOverridesKnown(spellInfo.spellID)
+    end
 end
 
 br.api.AutoShotOn = false
@@ -219,6 +226,14 @@ br.api.GetSpellCharges = function(...)
     sci.cooldownDuration = tonumber(br.unwrap(sci.cooldownDuration))
     sci.chargeModRate = tonumber(br.unwrap(sci.chargeModRate))
     return sci
+end
+
+br.api.UnitCanAttack = function(...)
+    return br.apis.UnitCanAttack(...)
+end
+
+br.api.UnitIsEnemy = function(...)
+    return br.apis.UnitIsEnemy(...)
 end
 
 br.api.InteractDistance = 5
